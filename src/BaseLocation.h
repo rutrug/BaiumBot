@@ -30,6 +30,12 @@ class BaseLocation
     CCPositionType              m_top;
     CCPositionType              m_bottom;
     bool                        m_isStartLocation;
+
+
+
+
+	std::vector<CCTilePosition>	m_backlineTurretPositions;
+	CCTilePosition				m_inlineTurretPosition;
     
 public:
 
@@ -54,4 +60,8 @@ public:
     const std::vector<CCTilePosition> & getClosestTiles() const;
 
     void draw();
+
+private:
+
+	void calculateTurretPositions();
 };

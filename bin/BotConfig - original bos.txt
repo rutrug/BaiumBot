@@ -17,9 +17,9 @@
     "SC2API" :
     {
         "BotRace"                   : "Terran",
-        "EnemyDifficulty"           : 1,
+        "EnemyDifficulty"           : 3,
         "EnemyRace"                 : "Random",
-        "MapFile"                   : "FrostLE.SC2Map",
+        "MapFile"                   : "PaladinoTerminalLE.SC2Map",
         "StepSize"                  : 1
     },
         
@@ -42,7 +42,7 @@
         "DrawProductionInfo"        : true, 
         "DrawBaseLocationInfo"      : true,
         "DrawTileInfo"              : false,
-        "DrawWalkableSectors"       : false,
+        "DrawWalkableSectors"       : true,
         "DrawScoutInfo"             : false,
         "DrawEnemyUnitInfo"         : false,
         "DrawResourceInfo"          : false,
@@ -84,28 +84,11 @@
                 "AttackCondition"   : [ ["Self", "Dragoon"], ">=", [ 3 ] ]
             },
             "Terran_MarineRush"     : 
-
-
-
             { 
                 "Race"              : "Terran",  
-                "OpeningBuildOrder" : ["SCV", "SCV", "SCV", "Supply Depot", "Barracks","SCV","SCV",
-"Refinery",
-"OrbitalCommand","Reaper",
-"CommandCenter",
-"Supply Depot",
-"Marine",
-"Factory",
-"SCV",
-"Refinery",
-"SCV",
-"Starport"], 
-
-
-
-
+                "OpeningBuildOrder" : ["SCV", "SCV", "SCV", "SCV", "Barracks", "Barracks", "SCV", "Supply Depot", "SCV", "Marine", "Marine", "Marine", "Marine", "Supply Depot"], 
                 "ScoutCondition"    : [ ["Self", "Supply Depot"], ">", [ 0 ] ],
-                "AttackCondition"   : [ ["Self", "Siege Tank"], ">=", [ 7 ] ]
+                "AttackCondition"   : [ ["Self", "Marine"], ">=", [ 4 ] ]
             },
             "Zerg_ZerglingRush"     : 
             { 
@@ -137,25 +120,9 @@
             "Terran_MarineRush"     : 
             { 
                 "Race"              : "Terran",  
-                "OpeningBuildOrder" : ["SCV","SCV", "SupplyDepot",
-"SCV",
-"SCV",
-"Barracks",
-"Refinery",
-"SCV",
-"SCV",
-"SCV",
-"OrbitalCommand","Reaper",
-"CommandCenter",
-"SupplyDepot",
-"Marine",
-"Factory",
-"SCV",
-"Refinery",
-"SCV",
-"Starport"],
+                "OpeningBuildOrder" : ["SCV", "SCV", "SupplyDepot", "SCV", "SCV", "Barracks", "Barracks", "Barracks", "Barracks", "SupplyDepot", "SupplyDepot", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine", "Marine"],
                 "ScoutCondition"    : [ ["Self", "SupplyDepot"], ">", [ 0 ] ],
-                "AttackCondition"   : [ ["Self", "Marine"], ">=", [ 30 ] ]
+                "AttackCondition"   : [ ["Self", "Marine"], ">=", [ 8 ] ]
             },
             "Zerg_ZerglingRush"     : 
             { 

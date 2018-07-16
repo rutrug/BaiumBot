@@ -57,7 +57,6 @@
     <ClCompile Include="..\src\WorkerManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\BaseLocation.h" />
     <ClInclude Include="..\src\BaseLocationManager.h" />
     <ClInclude Include="..\src\BotAssert.h" />
     <ClInclude Include="..\src\BotConfig.h" />
@@ -94,6 +93,7 @@
     <ClInclude Include="..\src\Util.h" />
     <ClInclude Include="..\src\WorkerData.h" />
     <ClInclude Include="..\src\WorkerManager.h" />
+    <ClInclude Include="..\src\BaseLocation.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGUID>{D4AC5062-8BEA-46D8-9231-57241C214F1C}</ProjectGUID>
@@ -169,8 +169,8 @@
     <OutDir>$(ProjectDir)/../bin/</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>C:\Libraries\SC2AI\sc2api_precompiled\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>C:\Libraries\SC2AI\sc2api_precompiled\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\sc2API\sc2api\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\sc2API\sc2api\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LibraryPath>C:\Libraries\BWAPI_420\lib;$(LibraryPath)</LibraryPath>

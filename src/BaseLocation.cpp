@@ -254,7 +254,16 @@ void BaseLocation::draw()
 
     m_bot.Map().drawTile(m_depotPosition.x, m_depotPosition.y, CCColor(0, 0, 255)); 
 
-    //m_distanceMap.draw(m_bot);
+    m_distanceMap.draw(m_bot);
+}
+
+void BaseLocation::calculateTurretPositions()
+{
+	//calculate inline turret position
+	
+	//calculate behind line turret positions
+
+
 }
 
 bool BaseLocation::isMineralOnly() const

@@ -63,6 +63,7 @@ void ProductionManager::manageBuildOrderQueue()
         // this is the unit which can produce the currentItem
         Unit producer = getProducer(currentItem.type);
 
+
         // check to see if we can make it right now
         bool canMake = canMakeNow(producer, currentItem.type);
 
@@ -242,6 +243,8 @@ bool ProductionManager::canMakeNow(const Unit & producer, const MetaType & type)
 {
     if (!producer.isValid() || !meetsReservedResources(type))
     {
+		// commented 
+		//hmm test
         return false;
     }
 

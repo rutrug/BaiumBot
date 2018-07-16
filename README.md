@@ -97,7 +97,6 @@ $ cd ../
 # Install SC2 API headers
 $ sudo mkdir -p /opt/local/include
 $ sudo cp -R include/sc2api /opt/local/include
-$ sudo cp -R include/sc2renderer /opt/local/include
 $ sudo cp -R include/sc2utils /opt/local/include
 $ sudo cp -R build/generated/s2clientprotocol /opt/local/include
 
