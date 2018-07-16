@@ -1,8 +1,19 @@
+# BaiumBot: Terran macro extension based on CommandCenter
+![Baium Screenshot](https://vignette.wikia.nocookie.net/starcraft/images/4/4c/ArcturusMengsk_SC2_Art2.jpg/revision/latest?cb=20110814133340)
+
+WIP!
+
+Goals for now:
+* Prepull for building constructions
+* Creating complete wallins
+* Effective and efficient building placement
+
+Used libraries:
+* Overseer library (https://gitlab.com/OverStarcraft/Overseer)
+
 # CommandCenter: AI Bot for Broodwar and Starcraft II
 
 CommandCenter is a StarCraft AI bot that can play both StarCraft: Broodwar and StarCraft 2.
-
-![CommandCenter Screenshot](https://i.imgur.com/SbTymsO.jpg)
 
 CommandCenter is written in C++ using [BWAPI](https://github.com/bwapi/bwapi) and Blizzard's [StarCraft II AI API](https://github.com/Blizzard/s2client-api). It provides many wrapper functions around both APIs that allow it to perform the same functionality in both games via the same source code. It is written by [David Churchill](http://www.cs.mun.ca/~dchurchill/), Assistant Professor of [Computer Science](https://www.cs.mun.ca/) at Memorial University, and organizer of the [AIIDE StarCraft AI Competition](http://www.cs.mun.ca/~dchurchill/starcraftaicomp/).
 
@@ -21,15 +32,4 @@ CommandCenter currently provides the following features:
 * Once a specific condition has been reached (having 12 combat units, by default), it will commence an attack, sending waves of units at the enemy base
 * Squads can be formed, consisting of multiple units following a specific order such as attack or defend a given location
 
-# BaiumBot: Terran macro extension
-WIP!
 
-Goals for now:
-* Prepull for building constructions
-* Creating complete wallins
-* Effective and efficient building placement
-
-Overseer library:
-tool for analyzing Starcraft 2 maps by region decomposition
-
-https://gitlab.com/OverStarcraft/Overseer
