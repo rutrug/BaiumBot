@@ -5,8 +5,10 @@ WIP!
 
 Goals for now:
 * Prepull for building constructions
+* Production manager will be able to build add-ons, upgrades
+* Automatic build-order planning system
 * Creating complete wallins
-* Effective and efficient building placement
+* Effective and efficient building placement (relatively smart turret & bunker placements, efficient production placement,...)
 
 Used libraries:
 * Overseer library (https://gitlab.com/OverStarcraft/Overseer)
