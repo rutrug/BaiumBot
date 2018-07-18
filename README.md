@@ -1,4 +1,4 @@
-# BaiumBot: Terran macro extension based on CommandCenter
+# BaiumBot: Terran macro extension based on CommandCenter bot
 ![Baium Screenshot](https://vignette.wikia.nocookie.net/starcraft/images/4/4c/ArcturusMengsk_SC2_Art2.jpg/revision/latest?cb=20110814133340)
 
 WIP!
