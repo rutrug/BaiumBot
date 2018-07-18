@@ -58,35 +58,62 @@ void ProductionManager::manageBuildOrderQueue()
     BuildOrderItem & currentItem = m_queue.getHighestPriorityItem();
 
     // while there is still something left in the queue
-    while (!m_queue.isEmpty())
-    {
-        // this is the unit which can produce the currentItem
-        Unit producer = getProducer(currentItem.type);
+	while (!m_queue.isEmpty())
+	{
+		// this is the unit which can produce the currentItem
+		Unit producer = getProducer(currentItem.type);
 
 
-        // check to see if we can make it right now
-        bool canMake = canMakeNow(producer, currentItem.type);
+		// check to see if we can make it right now
+		bool canMake = canMakeNow(producer, currentItem.type);
 
-        // TODO: if it's a building and we can't make it yet, predict the worker movement to the location
 
-        // if we can make the current item
-        if (producer.isValid() && canMake)
-        {
-            // create it and remove it from the _queue
-            create(producer, currentItem);
-            m_queue.removeCurrentHighestPriorityItem();
+		// TODO: if it's a building and we can't make it yet, predict the worker movement to the location
 
-            // don't actually loop around in here
-            break;
-        }
+		//Util::GetTilePosition(m_bot.GetStartLocation())
+
+
+
+		
+
+			// if we can make the current item
+			if (producer.isValid() && canMake)
+			{
+				// create it and remove it from the _queue
+				create(producer, currentItem);
+				m_queue.removeCurrentHighestPriorityItem();
+
+				// don't actually loop around in here
+				break;
+			}
+			else //even if i cant make it right now, i can preposition workers (only with specific buildings, to reduce downtime)?
+
+				if (producer.isValid() && (currentItem.type.getName() == "SupplyDepot" || 
+					currentItem.type.getName() == "CommandCenter" ||
+					currentItem.type.getName() == "Barracks") && !canMake) {
+
+					//i want specific building, i dont have enough resources, try to preposition workers!
+					create(producer, currentItem);
+					m_queue.removeCurrentHighestPriorityItem();
+
+					break;
+					//create method in m_buildingManager, try to find position and suitable worker
+					
+
+				}
+
         // otherwise, if we can skip the current item
         else if (m_queue.canSkipItem())
         {
+			//no skipping for now 
+			/**
             // skip it
             m_queue.skipItem();
 
             // and get the next one
             currentItem = m_queue.getNextHighestPriorityItem();
+
+			*/
         }
         else
         {
@@ -224,6 +251,7 @@ void ProductionManager::create(const Unit & producer, BuildOrderItem & item)
         }
         else
         {
+			// which type of unit, starting pos
             m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(m_bot.GetStartLocation()));
         }
     }

@@ -138,71 +138,69 @@ void BuildingManager::constructAssignedBuildings()
 
         bool isConstructing = false;
 
-        // if we're zerg and the builder unit is null, we assume it morphed into the building
-        if (Util::IsZerg(m_bot.GetPlayerRace(Players::Self)))
-        {
-            if (!builderUnit.isValid())
-            {
-                isConstructing = true;
-            }
-        }
-        else
-        {
-            BOT_ASSERT(builderUnit.isValid(), "null builder unit");
+        
+        BOT_ASSERT(builderUnit.isValid(), "null builder unit");
+        isConstructing = builderUnit.isConstructing(b.type);
 
-            isConstructing = builderUnit.isConstructing(b.type);
-        }
+	
+		//check mineral and gas bank
+		if(canBuild(b.type)) {
+			// if that worker is not currently constructing
+			if (!isConstructing)
+			{
+				// if we haven't explored the build position, go there
+				if (!isBuildingPositionExplored(b))
+				{
+					builderUnit.move(b.finalPosition);
+				}
+				// if this is not the first time we've sent this guy to build this
+				// it must be the case that something was in the way of building
+				else if (b.buildCommandGiven)
+				{
+					// TODO: in here is where we would check to see if the builder died on the way
+					//       or if things are taking too long, or the build location is no longer valid
+				}
+				else
+				{
+					// if it's a refinery, the build command has to be on the geyser unit tag
+					if (b.type.isRefinery())
+					{
+						// first we find the geyser at the desired location
+						Unit geyser;
+						for (auto unit : m_bot.GetUnits())
+						{
+							if (unit.getType().isGeyser() && Util::Dist(Util::GetPosition(b.finalPosition), unit.getPosition()) < 3)
+							{
+								geyser = unit;
+								break;
+							}
+						}
 
-        // if that worker is not currently constructing
-        if (!isConstructing)
-        {
-            // if we haven't explored the build position, go there
-            if (!isBuildingPositionExplored(b))
-            {
-                builderUnit.move(b.finalPosition);
-            }
-            // if this is not the first time we've sent this guy to build this
-            // it must be the case that something was in the way of building
-            else if (b.buildCommandGiven)
-            {
-                // TODO: in here is where we would check to see if the builder died on the way
-                //       or if things are taking too long, or the build location is no longer valid
-            }
-            else
-            {
-                // if it's a refinery, the build command has to be on the geyser unit tag
-                if (b.type.isRefinery())
-                {
-                    // first we find the geyser at the desired location
-                    Unit geyser;
-                    for (auto unit : m_bot.GetUnits())
-                    {
-                        if (unit.getType().isGeyser() && Util::Dist(Util::GetPosition(b.finalPosition), unit.getPosition()) < 3)
-                        {
-                            geyser = unit;
-                            break;
-                        }
-                    }
+						if (geyser.isValid())
+						{
+							b.builderUnit.buildTarget(b.type, geyser);
+						}
+						else
+						{
+							std::cout << "WARNING: NO VALID GEYSER UNIT FOUND TO BUILD ON, SKIPPING REFINERY\n";
+						}
+					}
+					// if it's not a refinery, we build right on the position
+					else
+					{
+						b.builderUnit.build(b.type, b.finalPosition);
+					}
 
-                    if (geyser.isValid())
-                    {
-                        b.builderUnit.buildTarget(b.type, geyser);
-                    }
-                    else
-                    {
-                        std::cout << "WARNING: NO VALID GEYSER UNIT FOUND TO BUILD ON, SKIPPING REFINERY\n";
-                    }
-                }
-                // if it's not a refinery, we build right on the position
-                else
-                {
-                    b.builderUnit.build(b.type, b.finalPosition);
-                }
-
-                // set the flag to true
-                b.buildCommandGiven = true;
-            }
-        }
+					// set the flag to true
+					b.buildCommandGiven = true;
+				}
+			}
+		}
+		else if(b.buildCommandGiven == false) {
+			//if i cant build the first bulding from the q, send worker to desired position ?
+			b.builderUnit.move(b.finalPosition);
+			break;
+		}
     }
 }
 
@@ -246,6 +244,8 @@ void BuildingManager::checkForStartedConstruction()
                 b.underConstruction = true;
                 b.buildingUnit = buildingStarted;
 
+
+				/**
                 // if we are zerg, the buildingUnit now becomes nullptr since it's destroyed
                 if (Util::IsZerg(m_bot.GetPlayerRace(Players::Self)))
                 {
@@ -256,6 +256,8 @@ void BuildingManager::checkForStartedConstruction()
                     m_bot.Workers().finishedWithWorker(b.builderUnit);
                     b.builderUnit = Unit();
                 }
+				*/
+
 
                 // put it in the under construction vector
                 b.status = BuildingStatus::UnderConstruction;
@@ -301,6 +303,18 @@ void BuildingManager::checkForCompletedBuildings()
     }
 
     removeBuildings(toRemove);
+}
+
+void BuildingManager::prepositionWorkers()
+{
+}
+
+bool BuildingManager::canBuild(const UnitType & type)
+{
+	if (m_bot.GetMinerals() >= type.mineralPrice() && m_bot.GetGas() >= type.gasPrice()) {
+		return true;
+	}
+	return false;
 }
 
 // add a new building to be constructed

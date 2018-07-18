@@ -26,7 +26,11 @@ class BuildingManager
     void            checkForDeadTerranBuilders();			// STEP 5
     void            checkForCompletedBuildings();			// STEP 6
 
+	void			prepositionWorkers();					// custom, 
+	bool			canBuild(const UnitType & type);		//custom, check reserves for building
+
     char            getBuildingWorkerCode(const Building & b) const;
+
 
 public:
 
