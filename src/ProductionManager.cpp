@@ -1,6 +1,7 @@
 #include "ProductionManager.h"
 #include "Util.h"
 #include "CCBot.h"
+#include <cstdlib>
 
 ProductionManager::ProductionManager(CCBot & bot)
     : m_bot             (bot)
@@ -64,57 +65,61 @@ void ProductionManager::manageBuildOrderQueue()
 		Unit producer = getProducer(currentItem.type);
 
 
+
 		// check to see if we can make it right now
 		bool canMake = canMakeNow(producer, currentItem.type);
+		bool isAddon = currentItem.type.getUnitType().isAddon();
 
 
 		// TODO: if it's a building and we can't make it yet, predict the worker movement to the location
 
-		//Util::GetTilePosition(m_bot.GetStartLocation())
 
 
+		// if we can make the current item
+		if (producer.isValid() && canMake && !isAddon)
+		{
+			// create it and remove it from the _queue
+			create(producer, currentItem);
+			m_queue.removeCurrentHighestPriorityItem();
 
-		
+			// don't actually loop around in here
+			break;
+		}
+		else //WIP - even if i cant make it right now, i can preposition workers (only with specific buildings, to reduce downtime)?
+			// for now only CC
 
-			// if we can make the current item
-			if (producer.isValid() && canMake)
-			{
-				// create it and remove it from the _queue
+			if (producer.isValid() && currentItem.type.getName() == "CommandCenter" && !canMake) {
+
+				//CC prepull
 				create(producer, currentItem);
 				m_queue.removeCurrentHighestPriorityItem();
 
-				// don't actually loop around in here
 				break;
+
+
 			}
-			else //even if i cant make it right now, i can preposition workers (only with specific buildings, to reduce downtime)?
 
-				if (producer.isValid() && (currentItem.type.getName() == "SupplyDepot" || 
-					currentItem.type.getName() == "CommandCenter" ||
-					currentItem.type.getName() == "Barracks") && !canMake) {
+			// if im trying to build addon its little bit different
+			else if (producer.isValid() && canMake && isAddon) {
 
-					//i want specific building, i dont have enough resources, try to preposition workers!
-					create(producer, currentItem);
-					m_queue.removeCurrentHighestPriorityItem();
+				create(producer, currentItem);
+				m_queue.removeCurrentHighestPriorityItem();
 
-					break;
-					//create method in m_buildingManager, try to find position and suitable worker
-					
+				break;
 
-				}
+			}
 
-        // otherwise, if we can skip the current item
-        else if (m_queue.canSkipItem())
-        {
-			//no skipping for now 
-			/**
-            // skip it
-            m_queue.skipItem();
+			// otherwise, if we can skip the current item
+			else if (m_queue.canSkipItem())
+			{
 
-            // and get the next one
-            currentItem = m_queue.getNextHighestPriorityItem();
+				// skip it
+				m_queue.skipItem();
 
-			*/
-        }
+				// and get the next one
+				currentItem = m_queue.getNextHighestPriorityItem();
+
+			}
         else
         {
             // so break out
@@ -195,12 +200,20 @@ Unit ProductionManager::getProducer(const MetaType & type, CCPosition closestTo)
         if (unit.isFlying()) { continue; }
 
         // TODO: if unit is not powered continue
-        // TODO: if the type is an addon, some special cases
         // TODO: if the type requires an addon and the producer doesn't have one
 
         // if we haven't cut it, add it to the set of candidates
         candidateProducers.push_back(unit);
     }
+
+
+	// TODO: if the type is an addon, some special cases
+	if (type.getUnitType().isAddon() && candidateProducers.size() > 0) {
+
+		int randIndex = rand() % candidateProducers.size();
+		return candidateProducers.at(randIndex);
+
+	}
 
     return getClosestUnitToPosition(candidateProducers, closestTo);
 }
@@ -242,16 +255,30 @@ void ProductionManager::create(const Unit & producer, BuildOrderItem & item)
         return;
     }
 
+
+	//if we are building an addon
+	if(item.type.getUnitType().isAddon()) {
+
+		// TODO: free reserved tiles!
+		producer.train(item.type.getUnitType());
+
+		//new buildingManager method to locate producer and free his addon tiles ?
+
+		m_buildingManager.freeAddonTiles(producer);
+		
+
+	} else
+
     // if we're dealing with a building
     if (item.type.isBuilding())
     {
         if (item.type.getUnitType().isMorphedBuilding())
         {
+
             producer.morph(item.type.getUnitType());
         }
         else
         {
-			// which type of unit, starting pos
             m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(m_bot.GetStartLocation()));
         }
     }
@@ -265,14 +292,13 @@ void ProductionManager::create(const Unit & producer, BuildOrderItem & item)
         // TODO: UPGRADES
         //Micro::SmartAbility(producer, m_bot.Data(item.type.getUpgradeID()).buildAbility, m_bot);
     }
+	
 }
 
 bool ProductionManager::canMakeNow(const Unit & producer, const MetaType & type)
 {
     if (!producer.isValid() || !meetsReservedResources(type))
     {
-		// commented 
-		//hmm test
         return false;
     }
 
@@ -296,6 +322,7 @@ bool ProductionManager::canMakeNow(const Unit & producer, const MetaType & type)
             }
         }
     }
+
 
     return false;
 #else
@@ -346,6 +373,7 @@ bool ProductionManager::meetsReservedResources(const MetaType & type)
     // return whether or not we meet the resources
     int minerals = m_bot.Data(type).mineralCost;
     int gas = m_bot.Data(type).gasCost;
+
 
     return (m_bot.Data(type).mineralCost <= getFreeMinerals()) && (m_bot.Data(type).gasCost <= getFreeGas());
 }

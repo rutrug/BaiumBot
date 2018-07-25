@@ -42,6 +42,8 @@ public:
     void                drawBuildingInformation();
     CCTilePosition      getBuildingLocation(const Building & b);
 
+	void				freeAddonTiles(const Unit & u);			//custom method to free addon tiles based on parent's location
+
     int                 getReservedMinerals();
     int                 getReservedGas();
 

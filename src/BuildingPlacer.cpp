@@ -66,6 +66,12 @@ bool BuildingPlacer::canBuildHereWithSpace(int bx, int by, const Building & b, i
 
     // TODO: make sure we leave space for add-ons. These types of units can have addons:
 
+	if (b.type.getName() == "Barracks") {
+		width += 2;
+	}
+	
+
+
     // define the rectangle of the building spot
     int startx = bx - buildDist;
     int starty = by - buildDist;

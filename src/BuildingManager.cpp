@@ -115,8 +115,20 @@ void BuildingManager::assignWorkersToUnassignedBuildings()
             continue;
         }
 
+
+
         // reserve this building's space
+		//if its building with addon, calculate extra tileWidth
+		//TODO: removal of reserved tiles ?
+
+
         m_buildingPlacer.reserveTiles((int)b.finalPosition.x, (int)b.finalPosition.y, b.type.tileWidth(), b.type.tileHeight());
+		
+		//TODO: not only for terran rax but every building with addon option
+		if (b.type.getName() == "TERRAN_BARRACKS") {
+			m_buildingPlacer.reserveTiles((int)b.finalPosition.x +3, (int)b.finalPosition.y, 2, 2);
+		}
+
 
         b.status = BuildingStatus::Assigned;
     }
@@ -127,10 +139,13 @@ void BuildingManager::constructAssignedBuildings()
 {
     for (auto & b : m_buildings)
     {
+		
         if (b.status != BuildingStatus::Assigned)
         {
             continue;
         }
+
+		
 
         // TODO: not sure if this is the correct way to tell if the building is constructing
         //sc2::AbilityID buildAbility = m_bot.Data(b.type).buildAbility;
@@ -145,6 +160,7 @@ void BuildingManager::constructAssignedBuildings()
 	
 		//check mineral and gas bank
 		if(canBuild(b.type)) {
+
 			// if that worker is not currently constructing
 			if (!isConstructing)
 			{
@@ -197,9 +213,11 @@ void BuildingManager::constructAssignedBuildings()
 			}
 		}
 		else if(b.buildCommandGiven == false) {
-			//if i cant build the first bulding from the q, send worker to desired position ?
-			b.builderUnit.move(b.finalPosition);
-			break;
+			if (!b.type.isAddon()) {
+				//if i cant build the first bulding from the q, send worker to desired position ?
+				b.builderUnit.move(b.finalPosition);
+				break;
+			}
 		}
     }
 }
@@ -439,6 +457,20 @@ CCTilePosition BuildingManager::getBuildingLocation(const Building & b)
     // get a position within our region
     // TODO: put back in special pylon / cannon spacing
     return m_buildingPlacer.getBuildLocationNear(b, m_bot.Config().BuildingSpacing);
+}
+
+void BuildingManager::freeAddonTiles(const Unit & u)
+{
+	int posX = u.getPosition().x;
+	int posY = u.getPosition().y;
+
+	int addPosX = posX + 3;
+	int addPosY = posY;
+
+	int addonWidth = 2;
+	int addonHeight = 2;
+	
+	m_buildingPlacer.freeTiles(addPosX, addPosY, addonWidth, addonHeight);
 }
 
 void BuildingManager::removeBuildings(const std::vector<Building> & toRemove)
