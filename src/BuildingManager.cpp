@@ -125,7 +125,9 @@ void BuildingManager::assignWorkersToUnassignedBuildings()
         m_buildingPlacer.reserveTiles((int)b.finalPosition.x, (int)b.finalPosition.y, b.type.tileWidth(), b.type.tileHeight());
 		
 		//TODO: not only for terran rax but every building with addon option
-		if (b.type.getName() == "TERRAN_BARRACKS") {
+		if (b.type.getName() == "TERRAN_BARRACKS" ||
+			b.type.getName() == "TERRAN_FACTORY" ||
+			b.type.getName() == "TERRAN_STARPORT") {
 			m_buildingPlacer.reserveTiles((int)b.finalPosition.x +3, (int)b.finalPosition.y, 2, 2);
 		}
 
