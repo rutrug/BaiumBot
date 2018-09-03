@@ -319,8 +319,11 @@ void BuildingManager::checkForCompletedBuildings()
 
             // remove this unit from the under construction vector
             toRemove.push_back(b);
+
         }
     }
+
+	//custom, if the finished building is a depot, lower it
 
     removeBuildings(toRemove);
 }

@@ -311,10 +311,11 @@ CCTilePosition BaseLocationManager::getNextExpansion(int player) const
 
     CCPosition homeTile = homeBase->getPosition();
     
+	
     for (auto & base : getBaseLocations())
     {
         // skip mineral only and starting locations (TODO: fix this)
-        if (base->isMineralOnly() || base->isStartLocation())
+		if (base->isMineralOnly() || base->isStartLocation() || base->isOccupiedByPlayer(Players::Self) || base->isOccupiedByPlayer(Players::Enemy))
         {
             continue;
         }
@@ -322,7 +323,9 @@ CCTilePosition BaseLocationManager::getNextExpansion(int player) const
         // get the tile position of the base
         auto tile = base->getDepotPosition();
         
+
         bool buildingInTheWay = false; // TODO: check if there are any units on the tile
+
 
         if (buildingInTheWay)
         {

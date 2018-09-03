@@ -19,7 +19,7 @@
         "BotRace"                   : "Terran",
         "EnemyDifficulty"           : 1,
         "EnemyRace"                 : "Random",
-        "MapFile"                   : "MechDepotLE.SC2Map",
+        "MapFile"                   : "FrostLE.SC2Map",
         "StepSize"                  : 2
     },
         
@@ -160,7 +160,16 @@
 "Starport",
 "Barracks",
 "StarportTechLab",
-"StarportReactor"
+"StarportReactor",
+"CommandCenter",
+"SupplyDepot",
+"Starport",
+"Barracks",
+"Starport",
+"Barracks",
+"StarportReactor",
+"CommandCenter"
+
 ],
                 "ScoutCondition"    : [ ["Self", "SupplyDepot"], ">", [ 0 ] ],
                 "AttackCondition"   : [ ["Self", "Marine"], ">=", [ 30 ] ]
