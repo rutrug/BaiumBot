@@ -246,7 +246,21 @@ CCTilePosition BuildingPlacer::getRefineryPosition()
             continue;
         }
 
-        CCPosition geyserPos(unit.getPosition());
+		CCPosition geyserPos(unit.getPosition());
+
+		bool conflict = false;
+		for (auto & unitt : m_bot.GetUnits()) {
+			if (unitt.getType().isRefinery()) {
+				if (unitt.getPosition().x == geyserPos.x && unitt.getPosition().y == geyserPos.y) {
+					conflict = true;
+					continue;
+				}
+			}
+		}
+		if (conflict) {
+			continue;
+		}
+
 
         // check to see if it's next to one of our depots
         bool nearDepot = false;
@@ -269,6 +283,7 @@ CCTilePosition BuildingPlacer::getRefineryPosition()
             }
         }
     }
+
 
 #ifdef SC2API
     return CCTilePosition((int)closestGeyser.x, (int)closestGeyser.y);
