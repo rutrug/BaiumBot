@@ -20,6 +20,7 @@ void WorkerManager::onFrame()
     m_workerData.updateAllWorkerData();
     handleGasWorkers();
     handleIdleWorkers();
+	handleMineralWorkers();
 
     drawResourceDebugInfo();
     drawWorkerInformation();
@@ -65,6 +66,7 @@ void WorkerManager::handleGasWorkers()
 
 void WorkerManager::handleIdleWorkers()
 {
+
     // for each of our workers
     for (auto & worker : m_workerData.getWorkers())
     {
@@ -83,6 +85,10 @@ void WorkerManager::handleIdleWorkers()
         if (m_workerData.getWorkerJob(worker) == WorkerJobs::Idle)
         {
             setMineralWorker(worker);
+
+
+			
+
         }
     }
 }
@@ -90,6 +96,73 @@ void WorkerManager::handleIdleWorkers()
 void WorkerManager::handleRepairWorkers()
 {
     // TODO
+}
+
+void WorkerManager::handleMineralWorkers()
+{
+	for (auto & worker : m_workerData.getWorkers())
+	{
+		if (!worker.isValid()) { continue; }
+
+		if (m_workerData.getWorkerJob(worker) == WorkerJobs::Minerals) {
+
+
+			const BaseLocation *workersBaseLocation;
+
+			Unit depotWithWorkerSpace;
+			bool possibleTransfer = false;
+			Unit cc;
+
+			//custom test, find every base, and find number of mineral workers for that base, as well as number of minerals.
+			
+			for (auto & base : m_bot.Bases().getBaseLocations()) {
+
+				if (base->isOccupiedByPlayer(Players::Self)) {
+
+					//std::cout << "Trying to find closest depot to a base from position x" << base->getPosition().x << " y" << base->getPosition().y << "\n";
+					cc = getClosestDepot(base->getPosition());
+					
+
+					//std::cout << cc.getID() << " x:" << base->getDepotPosition().x << " y:" << base->getDepotPosition().y << " minerals:" << base->getMinerals().size() << ", with " << m_workerData.getNumAssignedWorkers(cc) << " workers\n";
+					//find all bases that have mineral worker spaces
+					
+					if ((cc.getUnitPtr()->ideal_harvesters) > m_workerData.getNumAssignedWorkers(cc)) {
+						
+						//std::cout << "We have found a fresh base, " << cc.getID() << "\n";
+						depotWithWorkerSpace = cc;
+						possibleTransfer = true;
+
+					}
+
+					//if this is the current workers base
+					if (m_workerData.getWorkerDepot(worker) == cc) {
+						//save as his base location
+						workersBaseLocation = base;
+					}
+				}
+			}
+
+			Unit workersDepot = m_workerData.getWorkerDepot(worker);
+
+			//if current base is overflown, assign to one of the bases with empty spots.
+			if ((workersDepot.getUnitPtr()->ideal_harvesters) < m_workerData.getNumAssignedWorkers(workersDepot)) {
+
+				//std::cout << workersDepot.getID() << " Base is overflowing " << workersBaseLocation->getMinerals().size() * 2 << " minerals with " << m_workerData.getNumAssignedWorkers(workersDepot) << " workers \n";
+				//and there is suitable base to transfer to
+
+				//std::cout << depotWithWorkerSpace.isValid() << " validity \n";
+				if (depotWithWorkerSpace.isValid() && possibleTransfer == true) {
+
+					std::cout << "We have found a valid base to transfer! ";
+					m_workerData.setWorkerJob(worker, WorkerJobs::Idle);
+					m_workerData.setWorkerJob(worker, WorkerJobs::Minerals, depotWithWorkerSpace);
+					break;
+				}
+			}
+
+		}
+
+	}
 }
 
 Unit WorkerManager::getClosestMineralWorkerTo(const CCPosition & pos) const
@@ -123,36 +196,37 @@ Unit WorkerManager::getClosestMineralWorkerTo(const CCPosition & pos) const
 void WorkerManager::setMineralWorker(const Unit & unit)
 {
     // check if there is a mineral available to send the worker to
-    auto depot = getClosestDepot(unit);
+    auto depot = getClosestDepot(unit.getPosition());
 
     // if there is a valid mineral
-    if (depot.isValid())
-    {
+    if (depot.isValid()) {
+    
         // update m_workerData with the new job
         m_workerData.setWorkerJob(unit, WorkerJobs::Minerals, depot);
     }
 }
 
-Unit WorkerManager::getClosestDepot(Unit worker) const
+Unit WorkerManager::getClosestDepot(CCPosition unit) const
 {
     Unit closestDepot;
     double closestDistance = std::numeric_limits<double>::max();
 
-    for (auto & unit : m_bot.UnitInfo().getUnits(Players::Self))
+    for (auto & depot : m_bot.UnitInfo().getUnits(Players::Self))
     {
-        if (!unit.isValid()) { continue; }
-
-        if (unit.getType().isResourceDepot() && unit.isCompleted())
+        if (!depot.isValid()) { continue; }
+		
+        if (depot.getType().isResourceDepot() && depot.isCompleted())
         {
-            double distance = Util::Dist(unit, worker);
+			//std::cout << "registered depot " << unit.getID() << "\n"; //custom
+			double distance = Util::Dist(depot.getPosition(), unit);
             if (!closestDepot.isValid() || distance < closestDistance)
             {
-                closestDepot = unit;
+                closestDepot = depot;
                 closestDistance = distance;
             }
         }
     }
-
+	//std::cout << "closest depot " << closestDepot.getID() << " from pos x:" << unit.x << " y:" << unit.y << "\n";
     return closestDepot;
 }
 

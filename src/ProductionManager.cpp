@@ -79,6 +79,8 @@ void ProductionManager::manageBuildOrderQueue()
 		if (producer.isValid() && canMake && !isAddon)
 		{
 			// create it and remove it from the _queue
+			std::cout << "Creating item " << currentItem.type.getName() << "\n";												// custooooooooooooooooooooooooooooom
+
 			create(producer, currentItem);
 			m_queue.removeCurrentHighestPriorityItem();
 

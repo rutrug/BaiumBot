@@ -18,6 +18,8 @@ class WorkerManager
     void handleGasWorkers();
     void handleRepairWorkers();
 
+	void handleMineralWorkers();	//custom method, worker distribution amongst bases
+
 public:
 
     WorkerManager(CCBot & bot);
@@ -41,7 +43,7 @@ public:
     bool isBuilder(Unit worker) const;
 
     Unit getBuilder(Building & b,bool setJobAsBuilder = true) const;
-    Unit getClosestDepot(Unit worker) const;
+    Unit getClosestDepot(CCPosition unit) const;
     Unit getGasWorker(Unit refinery) const;
     Unit getClosestMineralWorkerTo(const CCPosition & pos) const;
 };

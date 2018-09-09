@@ -61,7 +61,10 @@ public:
 
     void draw();
 
+
+	void mineralDepleted(int positionInArray);	//custom
+
 private:
 
-	void calculateTurretPositions();
+	void calculateTurretPositions(); //custom
 };

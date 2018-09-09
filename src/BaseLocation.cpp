@@ -257,6 +257,11 @@ void BaseLocation::draw()
     m_distanceMap.draw(m_bot);
 }
 
+void BaseLocation::mineralDepleted(int positionInArray)
+{
+	m_minerals.erase(m_minerals.begin() + positionInArray);
+}
+
 void BaseLocation::calculateTurretPositions()
 {
 	//calculate inline turret position

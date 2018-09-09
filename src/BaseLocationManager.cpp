@@ -249,6 +249,24 @@ void BaseLocationManager::onFrame()
     }
 
     // draw the debug information for each base location
+
+	//custom, check for mineral changes?
+	/**
+	for (auto & baseLocation : m_baseLocationData) {
+		int counter = 0;
+
+		for (auto & mineral : baseLocation.getMinerals()) {
+
+			if (mineral.getUnitPtr()->ideal_harvesters <= 0) {
+				baseLocation.mineralDepleted(counter);
+				std::cout << "mineral depleted! \n";
+				break;
+			}
+			counter++;
+
+		}
+	}
+	*/
     
 }
 

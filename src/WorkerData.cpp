@@ -90,7 +90,7 @@ void WorkerData::setWorkerJob(const Unit & unit, int job, Unit jobUnit)
         m_depotWorkerCount[jobUnit]++;
 
         // find the mineral to mine and mine it
-        Unit mineralToMine = getMineralToMine(unit);
+        Unit mineralToMine = getMineralToMine(unit,jobUnit);
         
         unit.rightClick(mineralToMine);
     }
@@ -177,7 +177,7 @@ int WorkerData::getWorkerJob(const Unit & unit) const
     return WorkerJobs::None;
 }
 
-Unit WorkerData::getMineralToMine(const Unit & unit) const
+Unit WorkerData::getMineralToMine(const Unit & unit, const Unit & jobUnit) const
 {
     Unit bestMineral;
     double bestDist = 100000;
@@ -186,7 +186,7 @@ Unit WorkerData::getMineralToMine(const Unit & unit) const
     {
         if (!mineral.getType().isMineral()) continue;
 
-        double dist = Util::Dist(mineral, unit);
+        double dist = Util::Dist(mineral, jobUnit);
 
         if (dist < bestDist)
         {
