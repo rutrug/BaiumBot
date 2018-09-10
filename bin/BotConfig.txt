@@ -19,7 +19,7 @@
         "BotRace"                   : "Terran",
         "EnemyDifficulty"           : 1,
         "EnemyRace"                 : "Random",
-        "MapFile"                   : "CactusValleyLE.SC2Map",
+        "MapFile"                   : "CeruleanFallLE.SC2Map",
         "StepSize"                  : 2
     },
         

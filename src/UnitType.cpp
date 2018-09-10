@@ -176,6 +176,7 @@ bool UnitType::isGeyser() const
         case sc2::UNIT_TYPEID::NEUTRAL_VESPENEGEYSER        : return true;
         case sc2::UNIT_TYPEID::NEUTRAL_PROTOSSVESPENEGEYSER : return true;
         case sc2::UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER  : return true;
+		case sc2::UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER: return true; //custom fixed
         default: return false;
     }
 #else
