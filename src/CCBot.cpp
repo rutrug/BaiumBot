@@ -51,9 +51,10 @@ void CCBot::OnGameStart()
     m_map.onStart();
     m_unitInfo.onStart();
     m_bases.onStart();
-    m_workers.onStart();
+	m_workers.onStart();
 
     m_gameCommander.onStart();
+	
 }
 
 void CCBot::OnStep()

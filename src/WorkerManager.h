@@ -19,7 +19,7 @@ class WorkerManager
     void handleRepairWorkers();
 
 	void handleMineralWorkers();	//custom method, worker distribution amongst bases
-
+	void updateStartingWorkers();	//custom method, assign starting workers as mineral workers without sending them grouped to 1 mineral.
 public:
 
     WorkerManager(CCBot & bot);

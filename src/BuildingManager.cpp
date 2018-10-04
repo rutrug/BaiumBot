@@ -216,7 +216,7 @@ void BuildingManager::constructAssignedBuildings()
 		}
 		else if(b.buildCommandGiven == false) {
 			if (!b.type.isAddon()) {
-				//if i cant build the first bulding from the q, send worker to desired position ?
+				//if i cant build the first bulding from the q, send worker to desired position 
 				b.builderUnit.move(b.finalPosition);
 				break;
 			}
@@ -328,8 +328,30 @@ void BuildingManager::checkForCompletedBuildings()
     removeBuildings(toRemove);
 }
 
-void BuildingManager::prepositionWorkers()
+void BuildingManager::prepositionWorkers(const UnitType & type, const CCTilePosition & desiredPosition)
 {
+	Building b(type, desiredPosition);
+
+	CCTilePosition testLocation = getBuildingLocation(b); \
+
+	const CCPosition buildingPos(testLocation.x, testLocation.y);
+	
+	// grab the worker unit from WorkerManager which is closest to this final position
+	Unit builderUnit = m_bot.Workers().getClosestMineralWorkerTo(buildingPos);
+
+	//std::cout << "desired loc, x:" << testLocation.x << " y:" << testLocation.y << "\n";
+	//std::cout << builderUnit.getID() << " x:" << builderUnit.getPosition().x << " y:" << builderUnit.getPosition().y << "\n";
+	builderUnit.move(testLocation);
+
+	/**
+	if (builderUnit.isValid()) {
+		builderUnit.move(testLocation);
+	}
+	else {
+		std::cout << "invalid worker \n";
+	}
+	*/
+	
 }
 
 bool BuildingManager::canBuild(const UnitType & type)

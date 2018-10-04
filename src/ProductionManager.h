@@ -20,6 +20,9 @@ class ProductionManager
     bool    detectBuildOrderDeadlock();
     void    setBuildOrder(const BuildOrder & buildOrder);
     void    create(const Unit & producer, BuildOrderItem & item);
+
+	void	preposition(const Unit & producer, BuildOrderItem & item); //custom, prepull for workers?
+
     void    manageBuildOrderQueue();
     int     getFreeMinerals();
     int     getFreeGas();

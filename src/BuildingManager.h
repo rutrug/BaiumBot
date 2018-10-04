@@ -26,7 +26,6 @@ class BuildingManager
     void            checkForDeadTerranBuilders();			// STEP 5
     void            checkForCompletedBuildings();			// STEP 6
 
-	void			prepositionWorkers();					// custom, 
 	bool			canBuild(const UnitType & type);		//custom, check reserves for building
 
     char            getBuildingWorkerCode(const Building & b) const;
@@ -43,6 +42,8 @@ public:
     CCTilePosition      getBuildingLocation(const Building & b);
 
 	void				freeAddonTiles(const Unit & u);			//custom method to free addon tiles based on parent's location
+	void			prepositionWorkers(const UnitType & type, const CCTilePosition & desiredPosition);					// custom, 
+
 
     int                 getReservedMinerals();
     int                 getReservedGas();

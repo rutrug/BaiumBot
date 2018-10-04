@@ -20,6 +20,7 @@ void WorkerData::updateAllWorkerData()
     {
         if (unit.getType().isWorker() && unit.isCompleted())
         {
+
             updateWorker(unit);
         }
     }
@@ -31,7 +32,7 @@ void WorkerData::updateAllWorkerData()
         if (getWorkerJob(worker) == WorkerJobs::None)
         {
             setWorkerJob(worker, WorkerJobs::Idle);
-        }
+		}
 
         // TODO: If it's a gas worker whose refinery has been destroyed, set to minerals
     }
@@ -90,9 +91,11 @@ void WorkerData::setWorkerJob(const Unit & unit, int job, Unit jobUnit)
         m_depotWorkerCount[jobUnit]++;
 
         // find the mineral to mine and mine it
-        Unit mineralToMine = getMineralToMine(unit,jobUnit);
+		
+
+		Unit mineralToMine = getMineralToMine(unit, jobUnit);
+		unit.rightClick(mineralToMine);
         
-        unit.rightClick(mineralToMine);
     }
     else if (job == WorkerJobs::Gas)
     {

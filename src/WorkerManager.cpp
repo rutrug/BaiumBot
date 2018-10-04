@@ -12,7 +12,6 @@ WorkerManager::WorkerManager(CCBot & bot)
 
 void WorkerManager::onStart()
 {
-
 }
 
 void WorkerManager::onFrame()
@@ -167,27 +166,34 @@ void WorkerManager::handleMineralWorkers()
 
 Unit WorkerManager::getClosestMineralWorkerTo(const CCPosition & pos) const
 {
+	//std::cout << "desired pos: x" << pos.x << " y" << pos.y << "\n";
     Unit closestMineralWorker;
     double closestDist = std::numeric_limits<double>::max();
 
+	int count = 0;
     // for each of our workers
     for (auto & worker : m_workerData.getWorkers())
     {
         if (!worker.isValid()) { continue; }
 
+		
         // if it is a mineral worker
         if (m_workerData.getWorkerJob(worker) == WorkerJobs::Minerals)
         {
+			count++;
             double dist = Util::DistSq(worker.getPosition(), pos);
 
             if (!closestMineralWorker.isValid() || dist < closestDist)
             {
                 closestMineralWorker = worker;
-                dist = closestDist;
+				closestDist = dist;
+                //dist = closestDist;
             }
         }
     }
 
+	//std::cout << "mineral workers: " << count << "\n";
+	//std::cout << "closest wor: x" << (int)closestMineralWorker.getPosition().x << " y" << (int)closestMineralWorker.getPosition().y << "\n";
     return closestMineralWorker;
 }
 

@@ -72,6 +72,7 @@ void ProductionManager::manageBuildOrderQueue()
 
 
 		// TODO: if it's a building and we can't make it yet, predict the worker movement to the location
+		
 
 
 
@@ -80,6 +81,7 @@ void ProductionManager::manageBuildOrderQueue()
 		{
 			// create it and remove it from the _queue
 
+			//std::cout << "making item \n";
 			create(producer, currentItem);
 			m_queue.removeCurrentHighestPriorityItem();
 
@@ -89,11 +91,15 @@ void ProductionManager::manageBuildOrderQueue()
 		else //WIP - even if i cant make it right now, i can preposition workers (only with specific buildings, to reduce downtime)?
 			// for now only CC
 
-			if (producer.isValid() && currentItem.type.getName() == "CommandCenter" && !canMake) {
+			if ((producer.isValid() && 
+				(currentItem.type.getName() == "CommandCenter" || currentItem.type.getName() == "SupplyDepot" || currentItem.type.getName() == "Barracks" || currentItem.type.getName() == "Factory")
+				&& 
+				!canMake)) {
 
 				//CC prepull
-				create(producer, currentItem);
-				m_queue.removeCurrentHighestPriorityItem();
+				m_buildingManager.prepositionWorkers(currentItem.type.getUnitType(), Util::GetTilePosition(m_bot.GetStartLocation()));
+				//create(producer, currentItem);
+				//m_queue.removeCurrentHighestPriorityItem();
 
 				break;
 
@@ -123,6 +129,7 @@ void ProductionManager::manageBuildOrderQueue()
 			}
         else
         {
+			//std::cout << canMake << " break \n" ;
             // so break out
             break;
         }
@@ -197,7 +204,12 @@ Unit ProductionManager::getProducer(const MetaType & type, CCPosition closestTo)
         // reasons a unit can not train the desired type
         if (std::find(producerTypes.begin(), producerTypes.end(), unit.getType()) == producerTypes.end()) { continue; }
         if (!unit.isCompleted()) { continue; }
-        if (m_bot.Data(unit).isBuilding && unit.isTraining()) { continue; }
+        
+		
+		//if (m_bot.Data(unit).isBuilding && unit.isTraining()) { continue; } //custom edited
+		if(type.isTech() && m_bot.Data(unit).isBuilding && unit.isTraining()) { continue; }
+
+
         if (unit.isFlying()) { continue; }
 
         // TODO: if unit is not powered continue
@@ -296,10 +308,23 @@ void ProductionManager::create(const Unit & producer, BuildOrderItem & item)
 	
 }
 
+void ProductionManager::preposition(const Unit & producer, BuildOrderItem & item)
+{
+}
+
 bool ProductionManager::canMakeNow(const Unit & producer, const MetaType & type)
 {
     if (!producer.isValid() || !meetsReservedResources(type))
     {
+		/**
+		if (!producer.isValid()) {
+			std::cout << "!is valid\n";
+		}
+		if (!meetsReservedResources(type)) {
+			std::cout << "!meets reserved resources\n";
+		}
+		*/
+		
         return false;
     }
 
@@ -309,7 +334,10 @@ bool ProductionManager::canMakeNow(const Unit & producer, const MetaType & type)
     // quick check if the unit can't do anything it certainly can't build the thing we want
     if (available_abilities.abilities.empty())
     {
-        return false;
+		
+		//std::cout << "empty abilities fail \n";
+        
+		return false;
     }
     else
     {
@@ -324,7 +352,7 @@ bool ProductionManager::canMakeNow(const Unit & producer, const MetaType & type)
         }
     }
 
-
+	//std::cout << "end method fail \n";
     return false;
 #else
     bool canMake = meetsReservedResources(type);
