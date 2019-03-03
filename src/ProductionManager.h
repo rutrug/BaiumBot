@@ -13,6 +13,7 @@ class ProductionManager
 
     BuildingManager m_buildingManager;
     BuildOrderQueue m_queue;
+	bool areWeSwapping = false;
 
     Unit    getClosestUnitToPosition(const std::vector<Unit> & units, CCPosition closestTo);
     bool    meetsReservedResources(const MetaType & type);
@@ -22,12 +23,14 @@ class ProductionManager
     void    create(const Unit & producer, BuildOrderItem & item);
 
 	void	preposition(const Unit & producer, BuildOrderItem & item); //custom, prepull for workers?
+	void	swap(BuildOrderItem & item);//custom
 
     void    manageBuildOrderQueue();
     int     getFreeMinerals();
     int     getFreeGas();
 
     void    fixBuildOrderDeadlock();
+	int		deadlockValue = 0;
 
 public:
 

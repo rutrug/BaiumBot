@@ -42,7 +42,7 @@ void CombatCommander::onFrame(const std::vector<Unit> & combatUnits)
 {
     if (!m_attackStarted)
     {
-        m_attackStarted = shouldWeStartAttacking();
+        //m_attackStarted = shouldWeStartAttacking();
     }
 
     m_combatUnits = combatUnits;
@@ -50,9 +50,9 @@ void CombatCommander::onFrame(const std::vector<Unit> & combatUnits)
     if (isSquadUpdateFrame())
     {
         updateIdleSquad();
-        updateScoutDefenseSquad();
+        //updateScoutDefenseSquad();
         updateDefenseSquads();
-        updateAttackSquads();
+        //updateAttackSquads();
     }
 
     m_squadData.onFrame();

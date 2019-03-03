@@ -8,6 +8,14 @@
 #include "sc2utils/sc2_manage_process.h"
 #include "sc2api/sc2_api.h"
 
+class Human : public sc2::Agent {
+public:
+	void OnGameStart() final {
+		Debug()->DebugTextOut("Human");
+		Debug()->SendDebug();
+	}
+};
+
 int main(int argc, char* argv[]) 
 {
     sc2::Coordinator coordinator;
@@ -39,6 +47,8 @@ int main(int argc, char* argv[])
     std::string botRaceString;
     std::string enemyRaceString;
     std::string mapString;
+	bool againstHuman = false;
+
     int stepSize = 1;
     sc2::Difficulty enemyDifficulty = sc2::Difficulty::Easy;
 
@@ -50,6 +60,7 @@ int main(int argc, char* argv[])
         JSONTools::ReadString("MapFile", info, mapString);
         JSONTools::ReadInt("StepSize", info, stepSize);
         JSONTools::ReadInt("EnemyDifficulty", info, enemyDifficulty);
+		JSONTools::ReadBool("AgainstHuman", info, againstHuman);
     }
     else
     {
@@ -60,18 +71,39 @@ int main(int argc, char* argv[])
 
     // Add the custom bot, it will control the players.
     CCBot bot;
+	Human human_bot;
+
+	sc2::Agent* player_one;
 
     
     // WARNING: Bot logic has not been thorougly tested on step sizes > 1
     //          Setting this = N means the bot's onFrame gets called once every N frames
     //          The bot may crash or do unexpected things if its logic is not called every frame
+	coordinator.SetMultithreaded(true);
     coordinator.SetStepSize(stepSize);
-    coordinator.SetRealtime(false);
+    
 
-    coordinator.SetParticipants({
-        sc2::CreateParticipant(Util::GetRaceFromString(botRaceString), &bot),
-        sc2::CreateComputer(Util::GetRaceFromString(enemyRaceString), enemyDifficulty)
-    });
+	if (againstHuman) {
+		//coordinator.SetRealtime(true);
+		player_one = &human_bot;
+
+		coordinator.SetParticipants({
+			sc2::CreateParticipant(sc2::Race::Zerg, player_one),
+			sc2::CreateParticipant(Util::GetRaceFromString(botRaceString), &bot)
+		});
+
+	}
+	else {
+		coordinator.SetRealtime(false);
+
+		coordinator.SetParticipants({
+			sc2::CreateParticipant(Util::GetRaceFromString(botRaceString), &bot),
+			sc2::CreateComputer(Util::GetRaceFromString(enemyRaceString), enemyDifficulty)
+		});
+
+	}
+
+    
 
     // Start the game.
     coordinator.LaunchStarcraft();

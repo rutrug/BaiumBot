@@ -101,6 +101,32 @@ MetaType::MetaType(const BWAPI::TechType & t, CCBot & bot)
 }
 #endif
 
+MetaType::MetaType(const std::string & selectedBuilding, const std::string & designatedBuilding, const std::string & designatedAddon, CCBot & bot)
+	: MetaType()
+{
+	m_bot = &bot;
+	m_name = "Swap " + selectedBuilding + ", " + designatedBuilding + " + " + designatedAddon;
+	m_type = MetaTypes::Swap;
+
+	m_swapOriginBuilding = UnitType::GetUnitTypeFromName(selectedBuilding, bot);
+	m_swapDesignatedBuilding = UnitType::GetUnitTypeFromName(designatedBuilding, bot);
+	m_swapDesignatedAddon = UnitType::GetUnitTypeFromName(designatedAddon, bot);
+
+	if (!m_swapOriginBuilding.isValid())
+	{
+		BOT_ASSERT(false, "Could not find MetaType with name: %s", selectedBuilding.c_str());
+	}
+	
+	if (!m_swapDesignatedBuilding.isValid())
+	{
+		BOT_ASSERT(false, "Could not find MetaType with name: %s", designatedBuilding.c_str());
+	}
+	if (!m_swapDesignatedAddon.isValid())
+	{
+		BOT_ASSERT(false, "Could not find MetaType with name: %s", designatedAddon.c_str());
+	}
+	return;
+}
 
 MetaType::MetaType(const UnitType & unitType, CCBot & bot)
 {
@@ -131,6 +157,11 @@ bool MetaType::isBuilding() const
     return isUnit() && getUnitType().isBuilding();
 }
 
+bool MetaType::isSwap() const
+{
+	return m_type == MetaTypes::Swap;
+}
+
 const size_t & MetaType::getMetaType() const
 {
     return m_type;
@@ -139,6 +170,11 @@ const size_t & MetaType::getMetaType() const
 bool MetaType::isUnit() const
 {
     return m_type == MetaTypes::Unit;
+}
+
+bool MetaType::isAddon() const
+{
+	return isUnit() && getUnitType().isAddon();
 }
 
 bool MetaType::isUpgrade() const
@@ -164,6 +200,21 @@ const UnitType & MetaType::getUnitType() const
 const CCUpgrade & MetaType::getUpgrade() const
 {
     return m_upgrade;
+}
+
+const UnitType & MetaType::getSwapOriginBuildingType() const
+{
+	return m_swapOriginBuilding;
+}
+
+const UnitType & MetaType::getSwapDesignatedBuildingType() const
+{
+	return m_swapDesignatedBuilding;
+}
+
+const UnitType & MetaType::getSwapDesignatedAddonType() const
+{
+	return m_swapDesignatedAddon;
 }
 
 const std::string & MetaType::getName() const

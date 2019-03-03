@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "UnitType.h"
+#include "MetaType.h"
 
 class CCBot;
 
@@ -68,4 +69,13 @@ public:
     void buildTarget    (const UnitType & buildingType, const Unit & target) const;
     void train          (const UnitType & buildingType) const;
     void morph          (const UnitType & type) const;
+
+
+	size_t getNumberOfOrders() const; //custom
+	void lift() const;	//custom
+	void land(CCTilePosition pos) const;	//custom
+	void cancel() const;	//custom
+	void upgrade(const MetaType & upgradeType) const;	//custom
+	void queuedMove(const CCPosition & targetPosition) const;
+
 };

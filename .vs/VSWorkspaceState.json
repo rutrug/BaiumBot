@@ -3,7 +3,10 @@
     "",
     "\\bin",
     "\\cmake",
-    "\\release"
+    "\\release",
+    "\\src",
+    "\\vs"
   ],
+  "SelectedNode": "\\vs\\CommandCenter.vcxproj",
   "PreviewInSolutionExplorer": false
 }

@@ -171,8 +171,17 @@ bool Unit::isTraining() const
     BOT_ASSERT(isValid(), "Unit is not valid");
 #ifdef SC2API
     return m_unit->orders.size() > 0;
+	
 #else
     return m_unit->isTraining();
+#endif
+}
+
+size_t Unit::getNumberOfOrders() const
+{
+	BOT_ASSERT(isValid(), "Unit is not valid");
+#ifdef SC2API
+	return m_unit->orders.size();
 #endif
 }
 
@@ -353,8 +362,17 @@ void Unit::train(const UnitType & type) const
     BOT_ASSERT(isValid(), "Unit is not valid");
 #ifdef SC2API
     m_bot->Actions()->UnitCommand(m_unit, m_bot->Data(type).buildAbility);
+
 #else
     m_unit->train(type.getAPIUnitType());
+#endif
+}
+
+void Unit::upgrade(const MetaType & type) const
+{
+	BOT_ASSERT(isValid(), "Unit is not valid");
+#ifdef SC2API
+	m_bot->Actions()->UnitCommand(m_unit, m_bot->Data(type).buildAbility);
 #endif
 }
 
@@ -365,6 +383,35 @@ void Unit::morph(const UnitType & type) const
     m_bot->Actions()->UnitCommand(m_unit, m_bot->Data(type).buildAbility);
 #else
     m_unit->morph(type.getAPIUnitType());
+#endif
+}
+
+void Unit::lift() const
+{
+	BOT_ASSERT(isValid(), "Unit is not valid");
+	m_bot->Actions()->UnitCommand(m_unit, sc2::ABILITY_ID::LIFT);
+}
+
+void Unit::land(CCTilePosition pos) const
+{
+	BOT_ASSERT(isValid(), "Unit is not valid");
+	m_bot->Actions()->UnitCommand(m_unit, sc2::ABILITY_ID::LAND, Util::GetPosition(pos), true);
+
+}
+
+void Unit::cancel() const
+{
+	BOT_ASSERT(isValid(), "Unit is not valid");
+	m_bot->Actions()->UnitCommand(m_unit, sc2::ABILITY_ID::CANCEL);
+}
+
+void Unit::queuedMove(const CCPosition & targetPosition) const
+{
+	BOT_ASSERT(isValid(), "Unit is not valid");
+#ifdef SC2API
+	m_bot->Actions()->UnitCommand(m_unit, sc2::ABILITY_ID::MOVE, targetPosition,true);
+#else
+	m_unit->move(targetPosition);
 #endif
 }
 

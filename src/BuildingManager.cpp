@@ -354,6 +354,99 @@ void BuildingManager::prepositionWorkers(const UnitType & type, const CCTilePosi
 	
 }
 
+bool BuildingManager::executeLift(Unit * originBuilding, Unit * designatedBuilding, Unit * designatedAddon)
+{
+	std::cout << originBuilding->isValid() << designatedBuilding->isValid() << designatedAddon->isValid() << "\n";
+	
+	originBuildingVar = originBuilding;
+	originBuildingID = originBuilding->getID();
+
+	designatedBuildingVar = designatedBuilding;
+	designatedBuildingID = designatedBuilding->getID();
+
+	designatedAddonVar = designatedAddon;
+	designatedAddonID = designatedAddon->getID();
+
+	std::cout << " ~executing lift~ ,b1: " << originBuildingVar->getType().getName() << " " << originBuildingVar->getID() << "\n";
+
+	originBuildingVar->lift();
+	designatedBuildingVar->lift();
+
+	//cout all positions!
+	std::cout << " ~executed lift~ \n";
+
+	return false;
+}
+
+bool BuildingManager::executeSwap()
+{
+
+
+	if (!executingSwap) {
+
+		std::cout << " origin building id: " << originBuildingID << "\n";
+		CCUnitID lokalID;
+		Unit lokalBuildingOrigin, lokalBuildingDest;
+
+		for (Unit unit : m_bot.UnitInfo().getUnits(Players::Self)) {
+			if (unit.getID() == originBuildingID) {
+				originBuildingVar = &unit;
+
+				lokalBuildingOrigin = unit;
+				lokalID = unit.getID();
+
+				std::cout << " origin building id2: " << originBuildingVar->getID() << " should equal to " << originBuildingID << "\n";
+			}
+			else if (unit.getID() == designatedBuildingID) {
+				lokalBuildingDest = unit;
+			}
+			else if (unit.getID() == designatedAddonID) {
+				//designatedBuildingVar = unit;
+			}
+		}
+
+		std::cout << " origin building global id3: " << originBuildingVar->getID() << " should equal to " << originBuildingID << "\n";
+
+		std::cout << " origin building lokal id4: " << lokalBuildingOrigin.getID() << " should equal to " << lokalID << "\n";
+
+		std::cout << " ~acquiring swap positions~ \n";
+		std::cout << " ~executing swap~ ,b1: " << lokalBuildingOrigin.getType().getName() << " " << lokalBuildingOrigin.getID() << "\n";
+
+
+		CCTilePosition originPos = lokalBuildingOrigin.getTilePosition();
+		CCTilePosition designatedPos = lokalBuildingDest.getTilePosition();
+
+
+		std::cout << " ~swap position acquired~ \n";
+
+		lokalBuildingOrigin.land(designatedPos);
+		lokalBuildingDest.land(originPos);
+
+		executingSwap = true;
+
+		//lokalBuildingOrigin.queuedMove(designatedPos);
+		//lokalBuildingDest.queuedMove(originPos);
+		//cout all positions!
+		std::cout << " ~executed~ \n";
+		
+		return false;
+	}
+	else {
+
+		for (Unit unit : m_bot.UnitInfo().getUnits(Players::Self)) {
+			if (unit.getType().isBuilding() && unit.isFlying()) {
+				std::cout << " ~some building is flying apparently~ \n";
+				return false;
+			}
+		}
+		executingSwap = false;
+		std::cout << " ~building swap has finished~ \n";
+		return true;
+	}
+	
+}
+
+
 bool BuildingManager::canBuild(const UnitType & type)
 {
 	if (m_bot.GetMinerals() >= type.mineralPrice() && m_bot.GetGas() >= type.gasPrice()) {

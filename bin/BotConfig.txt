@@ -17,10 +17,11 @@
     "SC2API" :
     {
         "BotRace"                   : "Terran",
-        "EnemyDifficulty"           : 3,
+        "EnemyDifficulty"           : 1,
         "EnemyRace"                 : "Random",
-        "MapFile"                   : "FractureLE.SC2Map",
-        "StepSize"                  : 5
+        "MapFile"                   : "revealerBelshir.SC2Map",
+        "StepSize"                  : 3,
+	"AgainstHuman"		    : false
     },
         
     "Micro" :
@@ -49,8 +50,8 @@
         "DrawUnitTargetInfo"        : false,
         "DrawLastSeenTileInfo"      : false,
         "DrawSquadInfo"             : false,
-        "DrawWorkerInfo"            : false,
-        "DrawBuildingInfo"          : false,
+        "DrawWorkerInfo"            : true,
+        "DrawBuildingInfo"          : true,
         "DrawReservedBuildingTiles" : true
     },
     
@@ -144,36 +145,34 @@
 "Refinery",
 "SCV",
 "SCV",
-"SCV",
-"Reaper",
-"OrbitalCommand",
+
 "CommandCenter",
 "SupplyDepot",
-"Marine",
-"SCV",
 "Factory",
+
 "Refinery",
 "SCV",
+
 "SCV",
 "BarracksReactor",
-"Marine",
-"Marine",
+"FactoryTechLab",
+"SCV",
+"SCV",
+"SCV",
+"OrbitalCommand",
 "SupplyDepot",
-"Marine",
-"Marine",
-"Marine",
-"Marine","Marine",
-"Marine","Marine",
+"SCV",
+"SWAP", "Factory", "Barracks", "BarracksReactor",
+"Hellion","Hellion",
+"ShieldWall",
+"Marauder",
+"Hellion","Hellion",
+"Marauder",
+"Hellion","Hellion",
+"Marauder",
+"Hellion","Hellion"
 
 
-"Marine","Marine",
-"Marine","Marine",
-"Marine","Marine",
-"Marine","Marine",
-"Marine","Marine",
-"Marine","Marine",
-"Marine","Marine",
-"Marine"
 
 
 ],

@@ -42,7 +42,9 @@ public:
     CCTilePosition      getBuildingLocation(const Building & b);
 
 	void				freeAddonTiles(const Unit & u);			//custom method to free addon tiles based on parent's location
-	void			prepositionWorkers(const UnitType & type, const CCTilePosition & desiredPosition);					// custom, 
+	void				prepositionWorkers(const UnitType & type, const CCTilePosition & desiredPosition);					// custom, 
+	bool				executeLift(Unit * originBuilding, Unit * designatedBuilding, Unit * designatedAddon);	//custom
+	bool				executeSwap();
 
 
     int                 getReservedMinerals();
@@ -51,4 +53,14 @@ public:
     bool                isBeingBuilt(UnitType type);
 
     std::vector<UnitType> buildingsQueued() const;
+
+	bool executingSwap = false;
+
+	Unit *originBuildingVar;
+	Unit *designatedBuildingVar;
+	Unit *designatedAddonVar;
+
+	CCUnitID originBuildingID;
+	CCUnitID designatedBuildingID;
+	CCUnitID designatedAddonID;
 };

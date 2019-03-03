@@ -170,8 +170,20 @@ void StrategyManager::readStrategyFile(const std::string & filename)
                 {
                     if (build[b].is_string())
                     {
-                        MetaType MetaType(build[b].get<std::string>(), m_bot);
-                        buildOrder.add(MetaType);
+						std::string peak = build[b].get<std::string>();
+						if (peak == "SWAP") {
+							std::string originB = build[++b].get<std::string>();
+							std::string designatedB = build[++b].get<std::string>();
+							std::string designatedA = build[++b].get<std::string>();
+
+							MetaType metaTypeSwap(originB, designatedB, designatedA, m_bot);
+							buildOrder.add(metaTypeSwap);
+						}
+						else {
+							MetaType MetaType(peak, m_bot);
+							buildOrder.add(MetaType);
+						}
+                        
                     }
                     else
                     {
