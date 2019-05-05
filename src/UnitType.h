@@ -48,6 +48,10 @@ public:
     bool canAttack() const;
     bool canMove() const;
     bool isAddon() const;
+
+	bool isTechLab() const;
+	bool isReactor() const;
+
     CCPositionType getAttackRange() const;
     int tileWidth() const;
     int tileHeight() const;

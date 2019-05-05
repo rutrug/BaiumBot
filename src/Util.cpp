@@ -52,6 +52,29 @@ CCPositionType Util::TileToPosition(float tile)
 #endif
 }
 
+const Unit Util::getClostestMineral(sc2::Point2D pos, CCBot & bot)
+{
+	Unit closestMineral;
+	double closestDistance = std::numeric_limits<double>::max();
+	
+	for (auto & mineral : bot.GetUnits())
+	{
+		if (!mineral.isValid()) { continue; }
+
+		if (mineral.getType().isMineral())
+		{
+			//std::cout << "registered depot " << unit.getID() << "\n"; //custom
+			double distance = Util::Dist(mineral.getPosition(), pos);
+			if (!closestMineral.isValid() || distance < closestDistance)
+			{
+				closestMineral = mineral;
+				closestDistance = distance;
+			}
+		}
+	}
+	return closestMineral;
+}
+
 UnitType Util::GetSupplyProvider(const CCRace & race, CCBot & bot)
 {
 #ifdef SC2API
@@ -183,6 +206,53 @@ CCPositionType Util::DistSq(const CCPosition & p1, const CCPosition & p2)
     CCPositionType dy = p1.y - p2.y;
 
     return dx*dx + dy*dy;
+}
+
+float Util::DistSq(const sc2::Point2D & p1)
+{
+	float dx = p1.x;
+	float dy = p1.y;
+
+	return dx * dx + dy * dy;
+}
+
+float Util::fastsqrt(const float S)
+{
+	//Guess x0
+	float x = 1.0f;
+	while (x*x < S)
+	{
+		x += 0.5f;
+	}
+	for (int j = 0; j < 5; ++j)
+	{
+		x = 0.5f*(x + S / x);
+	}
+	return x;
+}
+
+float Util::Dist(const sc2::Point2D pos)
+{
+	return fastsqrt(Util::DistSq(pos));
+}
+
+sc2::Point2D Util::normalizeVector(const sc2::Point2D pos, const float length)
+{
+	if (Util::Dist(pos) == 0.0f)
+	{
+		return sc2::Point2D();
+	}
+	return (length / Util::Dist(pos)) * pos;
+}
+
+CCPosition Util::prolongDirection(CCPosition from, CCPosition to, double percentage)
+{
+	float x = 0;
+	float y = 0;
+	x = (to.x - from.x)*percentage;
+	y = (to.y - from.y)*percentage;
+
+	return CCPosition((to.x+x), (to.y+y));
 }
 
 #ifdef SC2API

@@ -34,14 +34,12 @@ void WorkerData::updateAllWorkerData()
             setWorkerJob(worker, WorkerJobs::Idle);
 		}
 
-        // TODO: If it's a gas worker whose refinery has been destroyed, set to minerals
     }
 
     // remove any worker units which no longer exist in the game
     std::vector<Unit> workersDestroyed;
     for (auto worker : getWorkers())
     {
-        // TODO: for now skip gas workers because they disappear inside refineries, this is annoying
         if (!worker.isValid() && (getWorkerJob(worker) != WorkerJobs::Gas))
         {
             workersDestroyed.push_back(worker);
@@ -90,11 +88,19 @@ void WorkerData::setWorkerJob(const Unit & unit, int job, Unit jobUnit)
         m_workerDepotMap[unit] = jobUnit;
         m_depotWorkerCount[jobUnit]++;
 
-        // find the mineral to mine and mine it
-		
-
-		Unit mineralToMine = getMineralToMine(unit, jobUnit);
-		unit.rightClick(mineralToMine);
+		//condition that if this is the start of the game, let them be
+		if (startOfGame) {
+			for (auto unit : m_bot.UnitInfo().getUnits(Players::Self)) {
+				if (unit.getType().getName() == "TERRAN_SUPPLYDEPOT") {
+					startOfGame = false;
+				}
+			}
+		}
+		else {
+			// find the mineral to mine and mine it
+			Unit mineralToMine = getMineralToMine(unit, jobUnit);
+			unit.rightClick(mineralToMine);
+		}
         
     }
     else if (job == WorkerJobs::Gas)
@@ -114,7 +120,7 @@ void WorkerData::setWorkerJob(const Unit & unit, int job, Unit jobUnit)
     }
     else if (job == WorkerJobs::Repair)
     {
-        unit.rightClick(jobUnit);
+        unit.repair(jobUnit);
     }
     else if (job == WorkerJobs::Scout)
     {

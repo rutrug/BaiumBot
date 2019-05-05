@@ -1,7 +1,6 @@
 # All the source files for the bot.
-file(GLOB BOT_SOURCES "*.cpp" "*.h" "*.hpp")
-
-# Enable compilation of the SC2 version of the bot.
+file(GLOB BOT_SOURCES "*.cpp" "*.h" "*.hpp" "Overseer/src/*.cpp" "Overseer/src/*.h" "Overseer/src/*.hpp")
+# Enable compilation of the SC2 version ofQ* the bot.
 add_definitions(-DSC2API)
 
 include_directories(SYSTEM "${SC2Api_INCLUDE_DIRS}")

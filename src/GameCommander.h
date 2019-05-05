@@ -5,6 +5,7 @@
 #include "ProductionManager.h"
 #include "ScoutManager.h"
 #include "CombatCommander.h"
+#include "ThreatMap.h"
 
 class CCBot;
 
@@ -26,6 +27,13 @@ class GameCommander
     void assignUnit(const Unit & unit, std::vector<Unit> & units);
     bool isAssigned(const Unit & unit) const;
 
+	int threatDetectionCD = 30;
+	int threatDetectionCurrent = 0;
+	int depotCDMax = 60;
+	int depotCDNow = 0;
+	int upgradeCDMax = 300;
+	int upgradeCDNow = 0;
+
 public:
 
     GameCommander(CCBot & bot);
@@ -45,4 +53,7 @@ public:
 
     void onUnitCreate(const Unit & unit);
     void onUnitDestroy(const Unit & unit);
+
+	void detectCurrentThreats();
+	void manageThreatMap();
 };

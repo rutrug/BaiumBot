@@ -11,6 +11,7 @@ class BuildingManager
 
     BuildingPlacer  m_buildingPlacer;
     std::vector<Building> m_buildings;
+	std::vector<Building> m_damagedBuildings;
 
     bool            m_debugMode;
     int             m_reservedMinerals;				// minerals reserved for planned buildings
@@ -24,7 +25,10 @@ class BuildingManager
     void            constructAssignedBuildings();			// STEP 3
     void            checkForStartedConstruction();			// STEP 4
     void            checkForDeadTerranBuilders();			// STEP 5
+	void			checkForDamagedBuildings();				// STEP 5.1 custom
+	void			repairDamagedBuildings();				// step 5.2 custom
     void            checkForCompletedBuildings();			// STEP 6
+	void			checkFinishedRepairs();					//STEP 6.1
 
 	bool			canBuild(const UnitType & type);		//custom, check reserves for building
 
@@ -41,7 +45,7 @@ public:
     void                drawBuildingInformation();
     CCTilePosition      getBuildingLocation(const Building & b);
 
-	void				freeAddonTiles(const Unit & u);			//custom method to free addon tiles based on parent's location
+	void				freeAddonTiles(CCTilePosition pos);			//custom method to free addon tiles based on parent's location
 	void				prepositionWorkers(const UnitType & type, const CCTilePosition & desiredPosition);					// custom, 
 	bool				executeLift(Unit * originBuilding, Unit * designatedBuilding, Unit * designatedAddon);	//custom
 	bool				executeSwap();

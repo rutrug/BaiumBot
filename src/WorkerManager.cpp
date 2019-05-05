@@ -19,13 +19,13 @@ void WorkerManager::onFrame()
     m_workerData.updateAllWorkerData();
     handleGasWorkers();
     handleIdleWorkers();
+
 	handleMineralWorkers();
 
     drawResourceDebugInfo();
     drawWorkerInformation();
 
     m_workerData.drawDepotDebugInfo();
-
     handleRepairWorkers();
 }
 
@@ -36,6 +36,7 @@ void WorkerManager::setRepairWorker(Unit worker, const Unit & unitToRepair)
 
 void WorkerManager::stopRepairing(Unit worker)
 {
+	//std::cout << " stopped repairing, idle job detected\n";
     m_workerData.setWorkerJob(worker, WorkerJobs::Idle);
 }
 
@@ -75,7 +76,8 @@ void WorkerManager::handleIdleWorkers()
         if (worker.isIdle() && 
 			(m_workerData.getWorkerJob(worker) != WorkerJobs::Build) && 
 			(m_workerData.getWorkerJob(worker) != WorkerJobs::Move) &&
-			(m_workerData.getWorkerJob(worker) != WorkerJobs::Scout)) 
+			(m_workerData.getWorkerJob(worker) != WorkerJobs::Scout) && 
+			(m_workerData.getWorkerJob(worker) != WorkerJobs::Repair))
 		{
 			m_workerData.setWorkerJob(worker, WorkerJobs::Idle);
 		}
@@ -94,7 +96,6 @@ void WorkerManager::handleIdleWorkers()
 
 void WorkerManager::handleRepairWorkers()
 {
-    // TODO
 }
 
 void WorkerManager::handleMineralWorkers()
@@ -113,13 +114,21 @@ void WorkerManager::handleMineralWorkers()
 			Unit cc;
 
 			//custom test, find every base, and find number of mineral workers for that base, as well as number of minerals.
-			
+			//std::cout << "worker manager test 1 \n";
+
 			for (auto & base : m_bot.Bases().getBaseLocations()) {
 
 				if (base->isOccupiedByPlayer(Players::Self)) {
 
 					//std::cout << "Trying to find closest depot to a base from position x" << base->getPosition().x << " y" << base->getPosition().y << "\n";
 					cc = getClosestDepot(base->getPosition());
+					
+					//std::cout << "worker manager test 1.5 \n";
+
+					
+					if (!(cc.isValid() && cc.isAlive())) {
+						return;
+					}
 					
 
 					//std::cout << cc.getID() << " x:" << base->getDepotPosition().x << " y:" << base->getDepotPosition().y << " minerals:" << base->getMinerals().size() << ", with " << m_workerData.getNumAssignedWorkers(cc) << " workers\n";
@@ -141,6 +150,8 @@ void WorkerManager::handleMineralWorkers()
 				}
 			}
 
+			//std::cout << "worker manager test 2 \n";
+
 			Unit workersDepot = m_workerData.getWorkerDepot(worker);
 
 			//if current base is overflown, assign to one of the bases with empty spots.
@@ -152,7 +163,7 @@ void WorkerManager::handleMineralWorkers()
 				//std::cout << depotWithWorkerSpace.isValid() << " validity \n";
 				if (depotWithWorkerSpace.isValid() && possibleTransfer == true) {
 
-					std::cout << "We have found a valid base to transfer! ";
+					//std::cout << "We have found a valid base to transfer! ";
 					m_workerData.setWorkerJob(worker, WorkerJobs::Idle);
 					m_workerData.setWorkerJob(worker, WorkerJobs::Minerals, depotWithWorkerSpace);
 					break;
@@ -201,6 +212,7 @@ Unit WorkerManager::getClosestMineralWorkerTo(const CCPosition & pos) const
 // set a worker to mine minerals
 void WorkerManager::setMineralWorker(const Unit & unit)
 {
+
     // check if there is a mineral available to send the worker to
     auto depot = getClosestDepot(unit.getPosition());
 
@@ -270,6 +282,41 @@ Unit WorkerManager::getBuilder(Building & b, bool setJobAsBuilder) const
     }
 
     return builderWorker;
+}
+
+Unit WorkerManager::getRepairWorker(const CCPosition & pos, Unit & u) const
+{
+	Unit closestMineralWorker;
+	double closestDist = std::numeric_limits<double>::max();
+
+	int count = 0;
+	// for each of our workers
+	for (auto & worker : m_workerData.getWorkers())
+	{
+		if (!worker.isValid()) { continue; }
+
+
+		// if it is a mineral worker
+		if (m_workerData.getWorkerJob(worker) == WorkerJobs::Minerals)
+		{
+			count++;
+			double dist = Util::DistSq(worker.getPosition(), pos);
+
+			if (!closestMineralWorker.isValid() || dist < closestDist)
+			{
+				closestMineralWorker = worker;
+				closestDist = dist;
+				//dist = closestDist;
+			}
+		}
+	}
+
+	//std::cout << "mineral workers: " << count << "\n";
+	//std::cout << "closest wor: x" << (int)closestMineralWorker.getPosition().x << " y" << (int)closestMineralWorker.getPosition().y << "\n";
+
+	m_workerData.setWorkerJob(closestMineralWorker, WorkerJobs::Repair, u);
+
+	return closestMineralWorker;
 }
 
 // sets a worker as a scout

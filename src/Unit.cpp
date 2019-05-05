@@ -30,6 +30,13 @@ const sc2::UnitTypeID & Unit::getAPIUnitType() const
     return m_unit->unit_type;
 }
 
+void Unit::pushRepairUnit(Unit unit) 
+{
+
+	m_repairUnits.push_back(unit);
+	repairCheckSize++;
+}
+
 #else
 Unit::Unit(const BWAPI::Unit unit, CCBot & bot)
     : m_bot(&bot)
@@ -181,6 +188,7 @@ size_t Unit::getNumberOfOrders() const
 {
 	BOT_ASSERT(isValid(), "Unit is not valid");
 #ifdef SC2API
+
 	return m_unit->orders.size();
 #endif
 }
@@ -333,18 +341,35 @@ void Unit::rightClick(const Unit & target) const
 
 void Unit::repair(const Unit & target) const
 {
-    rightClick(target);
+	m_bot->Actions()->UnitCommand(m_unit, sc2::ABILITY_ID::EFFECT_REPAIR, target.getUnitPtr());
 }
 
 void Unit::build(const UnitType & buildingType, CCTilePosition pos) const
 {
-    BOT_ASSERT(m_bot->Map().isConnected(getTilePosition(), pos), "Error: Build Position is not connected to worker");
+	if (m_bot->Map().isConnected(getTilePosition(), pos)) {
+		m_bot->Actions()->UnitCommand(m_unit, m_bot->Data(buildingType).buildAbility, Util::GetPosition(pos));
+	}
+    //BOT_ASSERT(m_bot->Map().isConnected(getTilePosition(), pos), "Error: Build Position is not connected to worker");
     BOT_ASSERT(isValid(), "Unit is not valid");
 #ifdef SC2API
-    m_bot->Actions()->UnitCommand(m_unit, m_bot->Data(buildingType).buildAbility, Util::GetPosition(pos));
+    
 #else
     m_unit->build(buildingType.getAPIUnitType(), pos);
 #endif
+}
+
+void Unit::useMULE(const Unit & target) const
+{
+	BOT_ASSERT(isValid(), "Unit is not valid");
+	BOT_ASSERT(target.isValid(), "Unit is not valid");
+	//std::cout << "Casting MULE! " << m_unit->unit_type.to_string() << ", x: " << target.getPosition().x  << ", y: " << target.getPosition().y << "\n";
+
+	m_bot->Actions()->UnitCommand(m_unit, sc2::ABILITY_ID::EFFECT_CALLDOWNMULE, target.getUnitPtr());
+}
+
+void Unit::lowerDepot() const
+{
+	m_bot->Actions()->UnitCommand(m_unit, sc2::ABILITY_ID::MORPH_SUPPLYDEPOT_LOWER);
 }
 
 void Unit::buildTarget(const UnitType & buildingType, const Unit & target) const

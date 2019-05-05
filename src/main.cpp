@@ -3,6 +3,8 @@
 #include "JSONTools.h"
 #include "Util.h"
 
+
+
 #ifdef SC2API
 
 #include "sc2utils/sc2_manage_process.h"
@@ -47,7 +49,8 @@ int main(int argc, char* argv[])
     std::string botRaceString;
     std::string enemyRaceString;
     std::string mapString;
-	bool againstHuman = false;
+	bool againstHuman = true;
+	bool realTime = true;
 
     int stepSize = 1;
     sc2::Difficulty enemyDifficulty = sc2::Difficulty::Easy;
@@ -61,6 +64,7 @@ int main(int argc, char* argv[])
         JSONTools::ReadInt("StepSize", info, stepSize);
         JSONTools::ReadInt("EnemyDifficulty", info, enemyDifficulty);
 		JSONTools::ReadBool("AgainstHuman", info, againstHuman);
+		JSONTools::ReadBool("RealTime", info, realTime);
     }
     else
     {
@@ -79,12 +83,13 @@ int main(int argc, char* argv[])
     // WARNING: Bot logic has not been thorougly tested on step sizes > 1
     //          Setting this = N means the bot's onFrame gets called once every N frames
     //          The bot may crash or do unexpected things if its logic is not called every frame
-	coordinator.SetMultithreaded(true);
+	coordinator.SetMultithreaded(false);
     coordinator.SetStepSize(stepSize);
     
+	coordinator.SetRealtime(realTime);
 
 	if (againstHuman) {
-		//coordinator.SetRealtime(true);
+
 		player_one = &human_bot;
 
 		coordinator.SetParticipants({
@@ -94,21 +99,18 @@ int main(int argc, char* argv[])
 
 	}
 	else {
-		coordinator.SetRealtime(false);
-
+		
 		coordinator.SetParticipants({
 			sc2::CreateParticipant(Util::GetRaceFromString(botRaceString), &bot),
 			sc2::CreateComputer(Util::GetRaceFromString(enemyRaceString), enemyDifficulty)
 		});
 
 	}
-
-    
-
+	
     // Start the game.
     coordinator.LaunchStarcraft();
     coordinator.StartGame(mapString);
-
+	
     // Step forward the game simulation.
     while (true) 
     {

@@ -14,6 +14,7 @@ BaseLocation::BaseLocation(CCBot & bot, int baseID, const std::vector<Unit> & re
     , m_right                (std::numeric_limits<CCPositionType>::lowest())
     , m_top                  (std::numeric_limits<CCPositionType>::lowest())
     , m_bottom               (std::numeric_limits<CCPositionType>::max())
+	, m_centerOfBase(0.0f, 0.0f)
 {
     m_isPlayerStartLocation[0] = false;
     m_isPlayerStartLocation[1] = false;
@@ -22,6 +23,9 @@ BaseLocation::BaseLocation(CCBot & bot, int baseID, const std::vector<Unit> & re
 
     CCPositionType resourceCenterX = 0;
     CCPositionType resourceCenterY = 0;
+	float mineralsCenterX = 0;
+	float mineralsCenterY = 0;
+
 
     // add each of the resources to its corresponding container
     for (auto & resource : resources)
@@ -34,6 +38,8 @@ BaseLocation::BaseLocation(CCBot & bot, int baseID, const std::vector<Unit> & re
             // add the position of the minerals to the center
             resourceCenterX += resource.getPosition().x;
             resourceCenterY += resource.getPosition().y;
+			mineralsCenterX += resource.getPosition().x;
+			mineralsCenterY += resource.getPosition().y;
         }
         else
         {
@@ -58,6 +64,8 @@ BaseLocation::BaseLocation(CCBot & bot, int baseID, const std::vector<Unit> & re
     // calculate the center of the resources
     size_t numResources = m_minerals.size() + m_geysers.size();
 
+	const sc2::Point2D centerMinerals(mineralsCenterX / m_minerals.size(), mineralsCenterY / m_minerals.size());
+	m_centerOfMinerals = centerMinerals;
     m_centerOfResources = CCPosition(m_left + (m_right-m_left)/2, m_top + (m_bottom-m_top)/2);
 
     // compute this BaseLocation's DistanceMap, which will compute the ground distance
@@ -71,6 +79,8 @@ BaseLocation::BaseLocation(CCBot & bot, int baseID, const std::vector<Unit> & re
         {
             m_isStartLocation = true;
             m_depotPosition = Util::GetTilePosition(pos);
+			m_centerOfBase = CCPosition(m_depotPosition.x, m_depotPosition.y);
+			
         }
     }
     
@@ -82,14 +92,17 @@ BaseLocation::BaseLocation(CCBot & bot, int baseID, const std::vector<Unit> & re
             m_isPlayerStartLocation[Players::Self] = true;
             m_isStartLocation = true;
             m_isPlayerOccupying[Players::Self] = true;
+			m_centerOfBase = unit.getPosition();
             break;
         }
     }
+
     
     // if it's not a start location, we need to calculate the depot position
     if (!isStartLocation())
     {
         UnitType depot = Util::GetTownHall(m_bot.GetPlayerRace(Players::Self), m_bot);
+		
 #ifdef SC2API
         int offsetX = 0;
         int offsetY = 0;
@@ -108,16 +121,49 @@ BaseLocation::BaseLocation(CCBot & bot, int baseID, const std::vector<Unit> & re
             if (m_bot.Map().canBuildTypeAtPosition(buildTile.x, buildTile.y, depot))
             {
                 m_depotPosition = buildTile;
+				m_centerOfBase = CCPosition(buildTile.x, buildTile.y);
                 break;
             }
         }
     }
+
+	m_inlineTurretPosition = CCPosition((m_centerOfBase.x + (m_centerOfMinerals.x *2)) / 3, (m_centerOfBase.y + (m_centerOfMinerals.y)*2) / 3);
+
+	float bestDist = 0;
+
+	for (auto & mineral1 : m_minerals) {
+		for (auto & mineral2 : m_minerals) {
+
+			if (Util::Dist(mineral1, mineral2) > bestDist) {
+
+				m_mineralEdge1 = mineral1.getPosition();
+				m_mineralEdge2 = mineral2.getPosition();
+
+				bestDist = Util::Dist(mineral1, mineral2);
+			}
+
+		}
+	}
+	m_mineralEdge1 = Util::prolongDirection(m_centerOfBase,m_mineralEdge1,0.25);
+	m_mineralEdge2 = Util::prolongDirection(m_centerOfBase, m_mineralEdge2, 0.25);
+	m_behindMineralLine = Util::prolongDirection(m_centerOfBase, m_centerOfMinerals, 0.5);
+
+	/**
+	if (isPlayerStartLocation(Players::Self)) {
+		m_bunkerPosition = m_bot.Map().getBunkerPosition();
+	}
+	*/
 }
 
 // TODO: calculate the actual depot position
 const CCTilePosition & BaseLocation::getDepotPosition() const
 {
     return m_depotPosition;
+}
+
+const CCPosition & BaseLocation::getInlineTurretPosition() const
+{
+	return m_inlineTurretPosition;
 }
 
 void BaseLocation::setPlayerOccupying(CCPlayer player, bool occupying)
@@ -136,6 +182,55 @@ bool BaseLocation::isInResourceBox(int tileX, int tileY) const
     CCPositionType px = Util::TileToPosition((float)tileX);
     CCPositionType py = Util::TileToPosition((float)tileY);
     return px >= m_left && px < m_right && py < m_top && py >= m_bottom;
+}
+
+const int BaseLocation::getBaseID() const
+{
+	return m_baseID;
+}
+
+const sc2::Point2D & BaseLocation::getCenterOfRessources() const noexcept
+{
+	return m_centerOfResources;
+}
+
+const sc2::Point2D & BaseLocation::getCenterOfMinerals() const noexcept
+{
+	return m_centerOfMinerals;
+}
+
+
+
+const int BaseLocation::getNumberOfTurrets() const
+{
+	int turrets = 0;
+	for (auto & unit : m_bot.UnitInfo().getUnits(Players::Self)) {
+		if (unit.getType().getName() == "TERRAN_MISSILETURRET") {
+
+			float closestPosition = 10000;
+			int baseID = 0;
+
+			for (auto & base : m_bot.Bases().getOccupiedBaseLocations(Players::Self)) {
+				if (Util::Dist(unit.getPosition(), base->getCenterOfBase()) < closestPosition) {
+
+					closestPosition = Util::Dist(unit.getPosition(), base->getCenterOfBase());
+					baseID = base->getBaseID();
+
+				}
+			}
+
+			if (baseID == this->getBaseID()) {
+				turrets++;
+			}
+		}
+	}
+	return turrets;
+}
+
+const sc2::Point2D & BaseLocation::getCenterOfBase() const noexcept
+{
+	// TODO: insert return statement here
+	return m_centerOfBase;
 }
 
 bool BaseLocation::isOccupiedByPlayer(CCPlayer player) const
@@ -195,6 +290,7 @@ bool BaseLocation::isStartLocation() const
 
 const std::vector<CCTilePosition> & BaseLocation::getClosestTiles() const
 {
+
     return m_distanceMap.getSortedTiles();
 }
 
@@ -203,6 +299,10 @@ void BaseLocation::draw()
     CCPositionType radius = Util::TileToPosition(1.0f);
 
     m_bot.Map().drawCircle(m_centerOfResources, radius, CCColor(255, 255, 0));
+
+	m_bot.Map().drawCircle(m_centerOfMinerals, radius, CCColor(79, 255, 252));
+
+	m_bot.Map().drawCircle(m_inlineTurretPosition, radius, CCColor(200, 100, 100));
 
     std::stringstream ss;
     ss << "BaseLocation: " << m_baseID << "\n";
@@ -250,11 +350,24 @@ void BaseLocation::draw()
     if (m_isStartLocation)
     {
         m_bot.Map().drawCircle(Util::GetPosition(m_depotPosition), radius, CCColor(255, 0, 0));
+
     }
+
+	m_bot.Map().drawCircle(m_mineralEdge1, radius, CCColor(200, 100, 100));
+	m_bot.Map().drawCircle(m_mineralEdge2, radius, CCColor(200, 100, 100));
+	m_bot.Map().drawCircle(m_behindMineralLine, radius, CCColor(0, 200, 0));
 
     m_bot.Map().drawTile(m_depotPosition.x, m_depotPosition.y, CCColor(0, 0, 255)); 
 
+	/**
+	if (isPlayerStartLocation(Players::Self)) {
+		m_bot.Map().drawCircle(m_bunkerPosition, radius, CCColor(200, 70, 250));
+	}
+	*/
+
+
     m_distanceMap.draw(m_bot);
+
 }
 
 void BaseLocation::mineralDepleted(int positionInArray)
@@ -265,6 +378,7 @@ void BaseLocation::mineralDepleted(int positionInArray)
 void BaseLocation::calculateTurretPositions()
 {
 	//calculate inline turret position
+	
 	
 	//calculate behind line turret positions
 

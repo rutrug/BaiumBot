@@ -22,6 +22,8 @@ class WorkerData
     std::map<Unit, Unit>    m_workerRefineryMap;
     std::map<Unit, Unit>    m_workerDepotMap;
 
+	bool startOfGame = true;
+
     void clearPreviousJob(const Unit & unit);
 
 public:

@@ -2,6 +2,7 @@
 #include "Util.h"
 #include "CCBot.h"
 #include <cstdlib>
+#include <math.h>
 
 ProductionManager::ProductionManager(CCBot & bot)
     : m_bot             (bot)
@@ -30,21 +31,28 @@ void ProductionManager::onStart()
 
 void ProductionManager::onFrame()
 {
-    fixBuildOrderDeadlock();
-    manageBuildOrderQueue();
+	if (manageBOcdMax <= manageBOcdCurrent) {
 
-    // TODO: if nothing is currently building, get a new goal from the strategy manager
-    // TODO: detect if there's a build order deadlock once per second
-    // TODO: triggers for game things like cloaked units etc
+		fixBuildOrderDeadlock();
+		manageBuildOrderQueue();
+		ManageOCEnergy();
+		manageMacroLoop();
 
-    m_buildingManager.onFrame();
-    drawProductionInformation();
+		manageBOcdCurrent = 0;
+	}
+	else {
+		manageBOcdCurrent++;
+		
+	}
+
+	m_buildingManager.onFrame();
+
+	drawProductionInformation();
 }
 
-// on unit destroy
 void ProductionManager::onUnitDestroy(const Unit & unit)
 {
-    // TODO: might have to re-do build order if a vital unit died
+    
 }
 
 void ProductionManager::manageBuildOrderQueue()
@@ -73,7 +81,6 @@ void ProductionManager::manageBuildOrderQueue()
 			break;
 		}
 
-		std::cout << currentItem.type.getName() << "\n";
 
 		// this is the unit which can produce the currentItem
 		Unit producer = getProducer(currentItem.type);
@@ -86,31 +93,37 @@ void ProductionManager::manageBuildOrderQueue()
 			isAddon = currentItem.type.getUnitType().isAddon();
 		}
 
-		std::cout << currentItem.type.getName() << " " << producer.getType().getName() << " can make " << canMake << " (#3)\n";
+		//std::cout << currentItem.type.getName() << " " << producer.getType().getName() << " can make " << canMake << " (#3)\n";
 
 		// if we can make the current item
 		if (producer.isValid() && canMake && !isAddon)
 		{
-			std::cout << currentItem.type.getName() << " " << producer.getType().getName() << " (#4)\n";
+			
 			// create it and remove it from the _queue
 
-			//std::cout << "making item \n";
 			create(producer, currentItem);
 			m_queue.removeCurrentHighestPriorityItem();
 
 			// don't actually loop around in here
 			break;
 		}
-		else //WIP - even if i cant make it right now, i can preposition workers (only with specific buildings, to reduce downtime)?
-			// for now only CC
+		else //even if i cant make it right now, i can preposition workers 
 
 			if ((producer.isValid() && 
-				(currentItem.type.getName() == "CommandCenter" || currentItem.type.getName() == "SupplyDepot" || currentItem.type.getName() == "Barracks" || currentItem.type.getName() == "Factory")
+				(currentItem.type.getName() == "CommandCenter" || currentItem.type.getName() == "SupplyDepot")
 				&& 
 				!canMake)) {
 
-				//CC prepull
-				m_buildingManager.prepositionWorkers(currentItem.type.getUnitType(), Util::GetTilePosition(m_bot.GetStartLocation()));
+				if (currentItem.type.getName() == "SupplyDepot" && m_bot.Observation()->GetMinerals() >= 60) {
+
+					m_buildingManager.prepositionWorkers(currentItem.type.getUnitType(), Util::GetTilePosition(m_bot.GetStartLocation()));
+				}
+
+
+				if (currentItem.type.getName() == "CommandCenter" && m_bot.Observation()->GetMinerals() >= 200) {
+					m_buildingManager.prepositionWorkers(currentItem.type.getUnitType(), Util::GetTilePosition(m_bot.GetStartLocation()));
+				}
+
 				//create(producer, currentItem);
 				//m_queue.removeCurrentHighestPriorityItem();
 
@@ -142,7 +155,6 @@ void ProductionManager::manageBuildOrderQueue()
 			}
         else
         {
-			//std::cout << canMake << " break \n" ;
             // so break out
             break;
         }
@@ -169,7 +181,6 @@ void ProductionManager::fixBuildOrderDeadlock()
 
     if (!hasRequired)
     {
-        std::cout << currentItem.type.getName() << " needs " << m_bot.Data(currentItem.type).requiredUnits[0].getName() << "\n";
         m_queue.queueAsHighestPriority(MetaType(m_bot.Data(currentItem.type).requiredUnits[0], m_bot), true);
         fixBuildOrderDeadlock();
         return;
@@ -214,7 +225,22 @@ void ProductionManager::fixBuildOrderDeadlock()
 	}
 }
 
-Unit ProductionManager::getProducer(const MetaType & type, CCPosition closestTo)
+void ProductionManager::freeBuildOrderQueue()
+{
+	this->m_queue.clearAll();
+}
+
+int ProductionManager::numberOfAutomatedItems()
+{
+	return metaTypePriorityQueue.size();
+}
+
+int ProductionManager::numberOfQueuedItems()
+{
+	return m_queue.size();
+}
+
+Unit ProductionManager::getProducer(const MetaType & type, CCPosition closestTo, bool queueLimit)
 {
     // get all the types of units that cna build this type
     auto & producerTypes = m_bot.Data(type).whatBuilds;
@@ -237,18 +263,20 @@ Unit ProductionManager::getProducer(const MetaType & type, CCPosition closestTo)
 
         if (unit.isFlying()) { continue; }
 
-        // TODO: if unit is not powered continue
-        // TODO: if the type requires an addon and the producer doesn't have one
 
         // if we haven't cut it, add it to the set of candidates
 		if (unit.getNumberOfOrders() < leastAmountOfOrders) {
 			leastAmountOfOrders = unit.getNumberOfOrders();
 		}
+		if (queueLimit) {
+			if (unit.getNumberOfOrders() >= 2) {
+				continue;
+			}
+		}
         candidateProducers.push_back(unit);
     }
 
 
-	// TODO: if the type is an addon, some special cases
 	if (type.isAddon() && candidateProducers.size() > 0) {
 
 		int randIndex = rand() % candidateProducers.size();
@@ -256,15 +284,53 @@ Unit ProductionManager::getProducer(const MetaType & type, CCPosition closestTo)
 
 	}
 
-	if (candidateProducers.size() > 1) {
-		for (auto unit : candidateProducers) {
-			if (unit.getNumberOfOrders() <= leastAmountOfOrders) {
-				finalCandidateProducers.push_back(unit);
+	//get producers with the least amount of orders but check if producer has reactor addon
+
+	if (type.isUnit()) {
+		if (candidateProducers.size() >= 1) {
+			for (auto unit : candidateProducers) {
+
+				CCPosition unitPos = unit.getPosition();
+				CCPosition addonApproximation = unitPos + CCPosition(2, 0);
+
+				//check if it has an reactor
+				for (auto lookingForAddon : m_bot.UnitInfo().getUnits(Players::Self)) {
+
+					if (lookingForAddon.getType().isAddon()) {
+						if (lookingForAddon.getType().isReactor()) {
+							
+
+							if (lookingForAddon.isValid() && !lookingForAddon.isBeingConstructed()) {
+
+								int grDist = m_bot.Map().getGroundDistance(lookingForAddon.getPosition(), addonApproximation);
+								
+								if (grDist < 3) {
+									//we found a building with reactor!
+									
+									if (unit.getNumberOfOrders() - 1 <= leastAmountOfOrders) {
+										finalCandidateProducers.push_back(unit);
+									}
+
+								}
+							}
+						}
+					}
+
+				}
+			}
+		}
+	}
+	
+	if (finalCandidateProducers.size() == 0) {
+		if (candidateProducers.size() > 1) {
+			for (auto unit : candidateProducers) {
+				if (unit.getNumberOfOrders() <= leastAmountOfOrders) {
+					finalCandidateProducers.push_back(unit);
+				}
 			}
 		}
 	}
 
-	std::cout << "candidate producers: " << candidateProducers.size() << "\n"; //vymazat
 	if (finalCandidateProducers.size() > 0) {
 		return getClosestUnitToPosition(finalCandidateProducers, closestTo);
 	}
@@ -273,6 +339,37 @@ Unit ProductionManager::getProducer(const MetaType & type, CCPosition closestTo)
 	}
 
 	
+}
+
+int ProductionManager::numberOfViableProducers(const MetaType & type, CCPosition closestTo)
+{
+	// get all the types of units that cna build this type
+	auto & producerTypes = m_bot.Data(type).whatBuilds;
+
+	// make a set of all candidate producers
+
+	int freeSlots = 0;
+
+	for (auto unit : m_bot.UnitInfo().getUnits(Players::Self))
+	{
+		// reasons a unit can not train the desired type
+		if (std::find(producerTypes.begin(), producerTypes.end(), unit.getType()) == producerTypes.end()) { continue; }
+		if (!unit.isCompleted()) { continue; }
+
+
+		if (type.isTech() && m_bot.Data(unit).isBuilding && unit.isTraining()) { continue; }
+
+		if (unit.isFlying()) { continue; }
+
+		
+		if (unit.getNumberOfOrders() >= 2) {
+			continue;
+		}
+
+		freeSlots += 2 - unit.getNumberOfOrders();
+	}
+
+	return freeSlots;
 }
 
 Unit ProductionManager::getClosestUnitToPosition(const std::vector<Unit> & units, CCPosition closestTo)
@@ -311,19 +408,16 @@ void ProductionManager::create(const Unit & producer, BuildOrderItem & item)
     {
         return;
     }
-
-	std::cout << item.type.getName() << " " << producer.getType().getName() << " (#5)\n";
 	
 
 	//if we are building an addon
 	if(item.type.isAddon()) {
 
-		// TODO: free reserved tiles!
 		producer.train(item.type.getUnitType());
 
 		//new buildingManager method to locate producer and free his addon tiles ?
 
-		m_buildingManager.freeAddonTiles(producer);
+		m_buildingManager.freeAddonTiles(CCTilePosition(producer.getPosition().x, producer.getPosition().y));
 		
 
 	} 
@@ -332,12 +426,112 @@ void ProductionManager::create(const Unit & producer, BuildOrderItem & item)
     {
         if (item.type.getUnitType().isMorphedBuilding())
         {
-
+			//std::cout << "we are morphing \n";
             producer.morph(item.type.getUnitType());
         }
         else
         {
-            m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(m_bot.GetStartLocation()));
+			if (item.type.getUnitType().getName() == "TERRAN_BARRACKS") {
+				int numberOfBarracks = 0;
+				int numberOfDepots = 0;
+				CCPosition depotPos;
+				
+
+				for (auto & unit : m_bot.UnitInfo().getUnits(Players::Self)) {
+
+					if (unit.getType().getName() == "TERRAN_BARRACKS") {
+						numberOfBarracks++;
+					}
+					else if (unit.getType().getName() == "TERRAN_SUPPLYDEPOTLOWERED" ||
+						unit.getType().getName() == "TERRAN_SUPPLYDEPOT") {
+						numberOfDepots++;
+						depotPos = unit.getPosition();
+					}
+				}
+				if (numberOfDepots == 1 && numberOfBarracks == 0) {
+					CCPosition basePos = m_bot.Bases().getPlayerStartingBaseLocation(0)->getPosition();
+					CCPosition finalPosition = (depotPos  + basePos) / 2;
+
+					m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(finalPosition));
+				}
+				else {
+					m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(m_bot.GetStartLocation()));
+				}
+
+			} else 
+			if (item.type.getUnitType().getName() == "TERRAN_STARPORT") {
+				for (auto & unit : m_bot.UnitInfo().getUnits(Players::Self)) {
+					if (unit.getType().getName() == "TERRAN_FACTORY") {
+						m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(unit.getPosition()));
+						break;
+					}
+				}
+				//find location for missile turrets
+			} else
+			if (item.type.getUnitType().getName() == "TERRAN_MISSILETURRET") {
+				const BaseLocation *chosenBase;
+				int leastTurrets = 100;
+
+				for (auto & base : m_bot.Bases().getOccupiedBaseLocations(Players::Self)) {
+					
+					int turretsFound = base->getNumberOfTurrets();
+					if (turretsFound < leastTurrets) {
+						leastTurrets = turretsFound;
+						chosenBase = base;
+					}
+				}
+				if (leastTurrets == 0) {
+					m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(chosenBase->getInlineTurretPosition()));
+				}
+				else {
+					
+					srand(time(NULL));
+					int randomo;
+					randomo = rand() % 10 + 1;
+
+					if (randomo < 5) {
+						m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(chosenBase->m_mineralEdge1));
+					}
+					else {
+						m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(chosenBase->m_mineralEdge2));
+					}
+				}
+				
+			}
+			else if (item.type.getUnitType().getName() == "TERRAN_ENGINEERINGBAY" || item.type.getUnitType().getName() == "TERRAN_ARMORY") {
+				for (auto & base : m_bot.Bases().getOccupiedBaseLocations(Players::Self)) {
+					if (base->isStartLocation()) {
+						m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(base->m_behindMineralLine));
+						break;
+					}
+				}
+			}
+			 else if (item.type.getUnitType().getName() == "TERRAN_BUNKER") {
+
+				 sc2::Point2D bPoint(0.0, 0.0);
+
+				 if (m_bot.getDefendMainRamp()) {
+					  bPoint = m_bot.Map().getBunkerPosition();
+				 }
+				 else {
+					  bPoint = m_bot.Map().getNaturalBunkerPosition();
+				 }
+
+				CCTilePosition tp(bPoint.x, bPoint.y);
+				m_buildingManager.addBuildingTask(item.type.getUnitType(), tp);
+
+
+			}
+			else {
+				sc2::Point2D bPoint = m_bot.Map().getBunkerPosition();
+				CCPosition basePos = m_bot.Bases().getPlayerStartingBaseLocation(0)->getPosition();
+
+				CCPosition finalPosition = (basePos + basePos + CCPosition(bPoint.x,bPoint.y)) / 3;
+
+
+				m_buildingManager.addBuildingTask(item.type.getUnitType(), Util::GetTilePosition(m_bot.Bases().getPlayerStartingBaseLocation(Players::Self)->getCenterOfBase()));
+			}
+            
         }
     }
     // if we're dealing with a non-building unit
@@ -347,10 +541,7 @@ void ProductionManager::create(const Unit & producer, BuildOrderItem & item)
     }
     else if (item.type.isUpgrade())
     {
-		std::cout << "ready to be upgraded \n";
 
-        // TODO: UPGRADES
-        //Micro::SmartAbility(producer, m_bot.Data(item.type.getUpgradeID()).buildAbility, m_bot);
 		producer.upgrade(item.type);
     }
 	
@@ -362,7 +553,6 @@ void ProductionManager::preposition(const Unit & producer, BuildOrderItem & item
 
 void ProductionManager::swap(BuildOrderItem & item)
 {
-	std::cout << "test1\n";
 	const UnitType originB = item.type.getSwapOriginBuildingType();
 	const UnitType designatedB = item.type.getSwapDesignatedBuildingType();
 	const UnitType designatedA = item.type.getSwapDesignatedAddonType();
@@ -377,7 +567,6 @@ void ProductionManager::swap(BuildOrderItem & item)
 	Unit u_originB;
 	Unit u_designatedB;
 	Unit u_designatedA;
-	std::cout << "test2\n";
 	//if we are not already in the middle of a swap, begin
 	if (!areWeSwapping) {
 		for (Unit unit : m_bot.GetUnits()) {
@@ -394,7 +583,7 @@ void ProductionManager::swap(BuildOrderItem & item)
 						onHoldOrigin = false;
 						canSwapOriginB = true;
 					}
-					else if (unit.getBuildPercentage() > 0.9 && unit.isBeingConstructed()) {
+					else if (unit.getBuildPercentage() > 0.6 && unit.isBeingConstructed()) {
 						if (!u_originB.isValid() || (u_originB.getBuildPercentage() < unit.getBuildPercentage())) {
 							u_originB = unit;
 							onHoldOrigin = true;
@@ -415,20 +604,19 @@ void ProductionManager::swap(BuildOrderItem & item)
 									u_designatedA = unitt;
 									u_designatedB = unit;
 
-									std::cout << "addon is ready for a swap\n";
 									onHoldAddon = false;
 									canSwapDesignatedA = true;
 									canSwapDesignatedB = true;
 
 									break;
 								}
-								else if (unitt.getBuildPercentage() > 0.8) {
+								else if (unitt.getBuildPercentage() > 0.3) {
 
 									if (!u_designatedA.isValid() && !u_designatedB.isValid()) {
 										u_designatedA = unitt;
 										u_designatedB = unit;
 
-										std::cout << "waiting for an addon to finish!\n";
+									
 										onHoldAddon = true;
 
 									}
@@ -436,7 +624,7 @@ void ProductionManager::swap(BuildOrderItem & item)
 										u_designatedA = unitt;
 										u_designatedB = unit;
 
-										std::cout << "waiting for an addon to finish!\n";
+										
 										onHoldAddon = true;
 									}
 
@@ -448,7 +636,7 @@ void ProductionManager::swap(BuildOrderItem & item)
 			}
 		}
 
-		std::cout << "on hold origin " << onHoldOrigin << " on hold addon " << onHoldAddon << "\n";
+		
 
 		if ((onHoldAddon && canSwapOriginB) || (onHoldAddon && onHoldOrigin) || (canSwapDesignatedA && onHoldOrigin)) {
 			//waiting
@@ -462,7 +650,6 @@ void ProductionManager::swap(BuildOrderItem & item)
 				//wait
 			}
 			else {
-				std::cout << "EXECUTE SWAP!\n";
 
 				while (u_originB.getUnitPtr()->build_progress < 1 || u_designatedB.getUnitPtr()->build_progress < 1) {
 					u_originB.cancel();
@@ -479,18 +666,15 @@ void ProductionManager::swap(BuildOrderItem & item)
 
 			}
 
-
 		}
 		else {
 			//exiting without executing
-			std::cout << "FAIL SWAP!\n";
 			m_queue.removeCurrentHighestPriorityItem();
 		}
 	}
 	 else {
 		 //if we are in the middle of swapping, wait for finish
 
-		 std::cout << "test3\n";
 		 if (m_buildingManager.executeSwap()) {
 			 areWeSwapping = false;
 			 m_queue.removeCurrentHighestPriorityItem();
@@ -499,20 +683,70 @@ void ProductionManager::swap(BuildOrderItem & item)
 
 }
 
+void ProductionManager::ManageOCEnergy()
+{
+	int currentTotalEnergy = 0;
+	int remainingReservedRequirement = m_bot.GetReservedEnergy();
+	bool meetsReservedRequirement = false;
+
+	int unitEnergy;
+	for (auto & unit : m_bot.UnitInfo().getUnits(Players::Self))
+	{
+		if (unit.getType().getName() == "TERRAN_ORBITALCOMMAND")
+		{
+			unitEnergy = unit.getEnergy();
+
+			if (remainingReservedRequirement > 0) {
+				while (unitEnergy >= 50 && remainingReservedRequirement > 0) {
+					remainingReservedRequirement -= 50;
+					unitEnergy -= 50;
+				}
+			}
+			if (remainingReservedRequirement <= 0 && unitEnergy >= 50) {
+				//std::cout << "Usable energy from this OC: " << floor(unitEnergy / 50) * 50 << "\n";
+
+				
+				unit.useMULE(Util::getClostestMineral(unit.getPosition(), m_bot));
+
+			}
+		}
+
+	}
+	
+}
+
+void ProductionManager::manageMacroLoop()
+{
+	if (m_queue.size() < 4) {
+
+		
+		priority_queue<priorityMetaType> newQueue;
+
+		while (!metaTypePriorityQueue.empty()) {
+			priorityMetaType top(metaTypePriorityQueue.top().priority, metaTypePriorityQueue.top().metaType);
+			metaTypePriorityQueue.pop();
+
+			int numberOfPossibleProducers = numberOfViableProducers(top.metaType);
+
+			for (int i = numberOfPossibleProducers; i > 0; i--) {
+				m_queue.queueAsLowestPriority(top.metaType, false);
+			}
+
+			newQueue.push(top);
+		}
+		metaTypePriorityQueue = newQueue;
+
+	}
+	
+}
+
+
 
 
 bool ProductionManager::canMakeNow(const Unit & producer, const MetaType & type)
 {
     if (!producer.isValid() || !meetsReservedResources(type))
     {
-		/**
-		if (!producer.isValid()) {
-			std::cout << "!is valid\n";
-		}
-		if (!meetsReservedResources(type)) {
-			std::cout << "!meets reserved resources\n";
-		}
-		*/
 		
         return false;
     }
@@ -533,11 +767,11 @@ bool ProductionManager::canMakeNow(const Unit & producer, const MetaType & type)
         // check to see if one of the unit's available abilities matches the build ability type
         sc2::AbilityID MetaTypeAbility = m_bot.Data(type).buildAbility;
 
-		std::cout << MetaTypeAbility.to_string() << " meta type ability that we are looking for \n";
+		//std::cout << MetaTypeAbility.to_string() << " meta type ability that we are looking for \n";
 
         for (const sc2::AvailableAbility & available_ability : available_abilities.abilities)
         {
-			std::cout << available_ability.ability_id << " ability id we found \n";
+			//std::cout << available_ability.ability_id << " ability id we found \n";
             if (available_ability.ability_id == MetaTypeAbility)
             {
                 return true;
@@ -575,7 +809,6 @@ bool ProductionManager::canMakeNow(const Unit & producer, const MetaType & type)
 
 bool ProductionManager::detectBuildOrderDeadlock()
 {
-    // TODO: detect build order deadlocks here
     return false;
 }
 
@@ -602,6 +835,7 @@ bool ProductionManager::meetsReservedResources(const MetaType & type)
 
 void ProductionManager::drawProductionInformation()
 {
+
     if (!m_bot.Config().DrawProductionInfo)
     {
         return;
@@ -621,4 +855,59 @@ void ProductionManager::drawProductionInformation()
     ss << m_queue.getQueueInformation();
 
     m_bot.Map().drawTextScreen(0.01f, 0.01f, ss.str(), CCColor(255, 255, 0));
+}
+
+void ProductionManager::buildBunker()
+{
+	if (m_queue.getHighestPriorityItem().type.getName() != MetaType(std::string("Bunker"),m_bot).getName()) {
+
+		std::cout << "Prioritizing new bunker\n";
+
+		
+		m_queue.queueAsHighestPriority(MetaType(std::string("Bunker"), m_bot), true);
+	}
+	else {
+		//std::cout << "cant queue because there is bunker already? \n";
+	}
+}
+
+void ProductionManager::buildTurret()
+{
+	if (m_queue.getHighestPriorityItem().type.getName() != MetaType(std::string("MissileTurret"), m_bot).getName()) {
+		std::cout << "Prioritizing new turret\n";
+		m_queue.queueAsHighestPriority(MetaType(std::string("MissileTurret"), m_bot), true);
+	}
+}
+
+void ProductionManager::buildNow(const MetaType & type)
+{
+	m_queue.queueAsHighestPriority(type,true);
+	
+}
+
+void ProductionManager::pushToMacroLoopQueue(const MetaType & type, int priority)
+{
+	std::cout << "Macro looping " << type.getName() << " \n";
+	metaTypePriorityQueue.push(priorityMetaType(priority,type));
+}
+
+void ProductionManager::removeFromMacroLoopQueue(const MetaType & type)
+{
+	priority_queue<priorityMetaType> newQueue;
+
+	while (!metaTypePriorityQueue.empty()) {
+		priorityMetaType top(metaTypePriorityQueue.top().priority, metaTypePriorityQueue.top().metaType);
+
+
+		metaTypePriorityQueue.pop();
+
+		if (top.metaType.getName() == type.getName()) {
+			//do nothing
+		}
+		else {
+			//include in new list
+			newQueue.push(top);
+		}
+	}
+	metaTypePriorityQueue = newQueue;
 }

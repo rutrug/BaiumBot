@@ -43,6 +43,8 @@ public:
     bool isBuilder(Unit worker) const;
 
     Unit getBuilder(Building & b,bool setJobAsBuilder = true) const;
+	Unit getRepairWorker(const CCPosition & pos, Unit & u) const;
+
     Unit getClosestDepot(CCPosition unit) const;
     Unit getGasWorker(Unit refinery) const;
     Unit getClosestMineralWorkerTo(const CCPosition & pos) const;

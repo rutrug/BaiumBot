@@ -99,7 +99,7 @@ void BuildOrderQueue::queueAsHighestPriority(const MetaType & type, bool blockin
 {
     // the new priority will be higher
     int newPriority = m_highestPriority + m_defaultPrioritySpacing;
-
+	
     // queue the item
     queueItem(BuildOrderItem(type, newPriority, blocking));
 }

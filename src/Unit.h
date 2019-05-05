@@ -21,11 +21,19 @@ class Unit
 public:
 
     Unit();
+	
 
 #ifdef SC2API
     Unit(const sc2::Unit * unit, CCBot & bot);
     const sc2::Unit * getUnitPtr() const;
     const sc2::UnitTypeID & getAPIUnitType() const;
+
+	
+
+	std::vector<Unit>	m_repairUnits;
+	void pushRepairUnit(Unit  unit);
+	int repairCheckSize = 0;
+
 #else
     Unit(const BWAPI::Unit unit, CCBot & bot);
     const BWAPI::Unit getUnitPtr() const;
@@ -66,6 +74,8 @@ public:
     void rightClick     (const Unit & target) const;
     void repair         (const Unit & target) const;
     void build          (const UnitType & buildingType, CCTilePosition pos) const;
+	void useMULE		(const Unit & target) const; //custom
+	void lowerDepot() const;//c
     void buildTarget    (const UnitType & buildingType, const Unit & target) const;
     void train          (const UnitType & buildingType) const;
     void morph          (const UnitType & type) const;

@@ -18,10 +18,11 @@
     {
         "BotRace"                   : "Terran",
         "EnemyDifficulty"           : 1,
-        "EnemyRace"                 : "Random",
-        "MapFile"                   : "revealerBelshir.SC2Map",
-        "StepSize"                  : 3,
-	"AgainstHuman"		    : false
+        "EnemyRace"                 : "Zerg",
+        "MapFile"                   : "AbyssalReefLE.SC2Map",
+        "StepSize"                  : 1,
+	"AgainstHuman"		    : false,
+	"RealTime"		    : true
     },
         
     "Micro" :
@@ -33,7 +34,7 @@
     "Macro" :
     {
         "WorkersPerRefinery"        : 3,
-        "BuildingSpacing"           : 0,
+        "BuildingSpacing"           : 1,
         "PylonSpacing"              : 3
     },
 
@@ -41,7 +42,7 @@
     {
         "DrawGameInfo"              : true, 
         "DrawProductionInfo"        : true, 
-        "DrawBaseLocationInfo"      : true,
+        "DrawBaseLocationInfo"      : false,
         "DrawTileInfo"              : false,
         "DrawWalkableSectors"       : false,
         "DrawScoutInfo"             : false,
@@ -50,9 +51,10 @@
         "DrawUnitTargetInfo"        : false,
         "DrawLastSeenTileInfo"      : false,
         "DrawSquadInfo"             : false,
-        "DrawWorkerInfo"            : true,
-        "DrawBuildingInfo"          : true,
-        "DrawReservedBuildingTiles" : true
+        "DrawWorkerInfo"            : false,
+        "DrawBuildingInfo"          : false,
+        "DrawReservedBuildingTiles" : false,
+	"DrawThreatMap" 	    : false
     },
     
     "Modules" :
@@ -90,17 +92,21 @@
 
             { 
                 "Race"              : "Terran",  
-                "OpeningBuildOrder" : ["SCV", "SCV", "SCV", "Supply Depot", "Barracks","SCV","SCV",
+                "OpeningBuildOrder" : ["SCV", "SCV", "Supply Depot","SCV","Barracks","SCV",
 "Refinery",
-"OrbitalCommand","Reaper",
+"Reaper",
+"OrbitalCommand",
 "CommandCenter",
+"Barracks",
+"BarracksReactor",
 "Supply Depot",
-"Marine",
-"Factory",
-"SCV",
 "Refinery",
-"SCV",
-"Starport"], 
+"Factory",
+"BarracksTechLab",
+"OrbitalCommand",
+"Stimpack",
+"Starport"
+], 
 
 
 
@@ -121,7 +127,7 @@
     "SC2API Strategy" :
     {
         "Protoss"                   : "Protoss_ZealotRush",
-        "Terran"                    : "Terran_MarineRush",
+        "Terran"                    : "Terran_211StimDrop",
         "Zerg"                      : "Zerg_2HatchRoach",
         
         "ScoutHarassEnemy"          : true,
@@ -135,48 +141,80 @@
                 "ScoutCondition"    : [ ["Self", "Pylon"], ">", [ 0 ] ],
                 "AttackCondition"   : [ ["Self", "Zealot"], ">=", [ 8 ] ]
             },
-            "Terran_MarineRush"     : 
+            "Terran_211StimDrop"     : 
             { 
                 "Race"              : "Terran",  
-                "OpeningBuildOrder" : ["SCV","SCV", "SupplyDepot",
-"SCV",
-"SCV",
-"Barracks",
-"Refinery",
-"SCV",
-"SCV",
-
-"CommandCenter",
-"SupplyDepot",
-"Factory",
-
+                "OpeningBuildOrder" : ["SCV", "SCV", "SupplyDepot","SCV", "SCV","Barracks",
 "Refinery",
 "SCV",
 
-"SCV",
-"BarracksReactor",
-"FactoryTechLab",
-"SCV",
 "SCV",
 "SCV",
 "OrbitalCommand",
+"Reaper",
+"CommandCenter",
+"SCV",
+"Barracks",
+"BarracksReactor",
+"SCV",
+"SupplyDepot",
+"Refinery",
+"SCV",
+"Factory",
+
+
+"SCV",
+"Marine","Marine",
+"BarracksTechLab",
+"SCV",
+"SCV",
+"Marine",
+"Marine",
+
+"OrbitalCommand",
+"Stimpack",
+
+"Marine",
+"Starport",
+"FactoryReactor",
+"SCV",
+"Marine",
+"Marine",
+"SCV",
+"Marine",
 "SupplyDepot",
 "SCV",
-"SWAP", "Factory", "Barracks", "BarracksReactor",
-"Hellion","Hellion",
+"Marine",
+"SCV",
+"Marine",
+"SupplyDepot",
+"Marine",
+"Marine",
+"SCV",
+"Marine",
+"SCV",
+"Marine",
+"SWAP", "Starport", "Factory", "FactoryReactor",
+"Medivac","Medivac",
+"EngineeringBay",
+"Marine",
+"Marine",
+"Marine",
+"SCV","SCV",
+"SupplyDepot",
+"SCV","SCV",
+"Medivac",
+"TerranInfantryWeaponsLevel1",
+"SupplyDepot",
+"SCV","SCV",
 "ShieldWall",
-"Marauder",
-"Hellion","Hellion",
-"Marauder",
-"Hellion","Hellion",
-"Marauder",
-"Hellion","Hellion"
-
-
-
-
+"Marine",
+"Marine",
+"Marine",
+"Medivac",
+"CommandCenter"
 ],
-                "ScoutCondition"    : [ ["Self", "Barracks"], ">", [ 0 ] ],
+                "ScoutCondition"    : [ ["Self", "Barracks"], ">", [ 50 ] ],
                 "AttackCondition"   : [ ["Self", "Marine"], ">=", [ 30 ] ]
             },
             "Zerg_ZerglingRush"     : 

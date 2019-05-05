@@ -22,6 +22,8 @@ namespace Util
     bool            IsTerran(const CCRace & race);
     CCPositionType  TileToPosition(float tile);
 
+	const Unit		getClostestMineral(sc2::Point2D pos, CCBot & bot); //custom
+
 #ifdef SC2API
     sc2::BuffID     GetBuffFromName(const std::string & name, CCBot & bot);
     sc2::AbilityID  GetAbilityFromName(const std::string & name, CCBot & bot);
@@ -31,4 +33,10 @@ namespace Util
     float Dist(const Unit & unit1, const Unit & unit2);
     float Dist(const CCPosition & p1, const CCPosition & p2);
     CCPositionType DistSq(const CCPosition & p1, const CCPosition & p2);
+
+	float DistSq(const sc2::Point2D & p1);
+	float fastsqrt(const float S);
+	float Dist(const sc2::Point2D pos);
+	sc2::Point2D normalizeVector(const sc2::Point2D pos, const float length = 1.0f);
+	CCPosition	prolongDirection(CCPosition from, CCPosition to, double percentage);
 };

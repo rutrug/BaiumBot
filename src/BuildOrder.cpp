@@ -24,7 +24,6 @@ size_t BuildOrder::size() const
 
 const MetaType & BuildOrder::operator [] (const size_t & index) const
 {
-	//test test test
     return m_buildOrder[index];
 }
 

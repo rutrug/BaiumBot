@@ -273,6 +273,28 @@ bool UnitType::isAddon() const
 #endif
 }
 
+bool UnitType::isTechLab() const
+{
+	if (m_type.ToType() == sc2::UNIT_TYPEID::TERRAN_TECHLAB ||
+		m_type.ToType() == sc2::UNIT_TYPEID::TERRAN_BARRACKSTECHLAB ||
+		m_type.ToType() == sc2::UNIT_TYPEID::TERRAN_FACTORYTECHLAB ||
+		m_type.ToType() == sc2::UNIT_TYPEID::TERRAN_STARPORTTECHLAB) {
+		return true;
+	}
+	return false;
+}
+
+bool UnitType::isReactor() const
+{
+	if (m_type.ToType() == sc2::UNIT_TYPEID::TERRAN_REACTOR ||
+		m_type.ToType() == sc2::UNIT_TYPEID::TERRAN_BARRACKSREACTOR ||
+		m_type.ToType() == sc2::UNIT_TYPEID::TERRAN_FACTORYREACTOR ||
+		m_type.ToType() == sc2::UNIT_TYPEID::TERRAN_STARPORTREACTOR) {
+		return true;
+	}
+	return false;
+}
+
 bool UnitType::isBuilding() const
 {
 #ifdef SC2API

@@ -11,7 +11,14 @@ Building::Building()
     , status            (BuildingStatus::Unassigned)
     , buildCommandGiven (false)
     , underConstruction (false) 
-{} 
+	, m_repairUnits()
+	, maxDelay(10)
+	, currentDelay()
+	, hasSkipped()
+	, numberOfAssignedWorkers()
+{
+
+} 
 
 // constructor we use most often
 Building::Building(UnitType t, CCTilePosition desired)
@@ -25,7 +32,32 @@ Building::Building(UnitType t, CCTilePosition desired)
     , status            (BuildingStatus::Unassigned)
     , buildCommandGiven (false)
     , underConstruction (false) 
-{}
+	, m_repairUnits()
+	, maxDelay(10)
+	, currentDelay()
+	, hasSkipped()
+	,numberOfAssignedWorkers()
+{
+}
+
+Building::Building(Unit buildingUnit)
+	: desiredPosition()
+	, finalPosition(0, 0)
+	, position(0, 0)
+	, type()
+	, buildingUnit(buildingUnit)
+	, builderUnit()
+	, lastOrderFrame(0)
+	, status(BuildingStatus::Unassigned)
+	, buildCommandGiven(false)
+	, underConstruction(false)
+	, m_repairUnits()
+	, maxDelay(10)
+	, currentDelay()
+	, hasSkipped(false)
+	, numberOfAssignedWorkers()
+{
+}
 
 // equals operator
 bool Building::operator == (const Building & b) 
@@ -34,5 +66,6 @@ bool Building::operator == (const Building & b)
     return      (b.buildingUnit == buildingUnit) 
              && (b.builderUnit  == builderUnit) 
              && (b.finalPosition.x == finalPosition.x)
-             && (b.finalPosition.y == finalPosition.y);
+             && (b.finalPosition.y == finalPosition.y)
+			&& (b.buildingUnit.getID() == buildingUnit.getID());
 }

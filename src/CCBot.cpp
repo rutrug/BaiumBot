@@ -9,6 +9,7 @@ CCBot::CCBot()
     , m_gameCommander(*this)
     , m_strategy(*this)
     , m_techTree(*this)
+	, m_threatMap(*this)
 {
     
 }
@@ -54,23 +55,26 @@ void CCBot::OnGameStart()
 	m_workers.onStart();
 
     m_gameCommander.onStart();
+	m_threatMap.onStart();
 	
 }
 
 void CCBot::OnStep()
 {
-    setUnits();
-    m_map.onFrame();
-    m_unitInfo.onFrame();
-    m_bases.onFrame();
-    m_workers.onFrame();
-    m_strategy.onFrame();
 
-    m_gameCommander.onFrame();
+	setUnits();
+	m_map.onFrame();
+	m_unitInfo.onFrame();
+	m_bases.onFrame();
+	m_workers.onFrame();
+	m_strategy.onFrame();
+	m_gameCommander.onFrame();
 
-#ifdef SC2API
-    Debug()->SendDebug();
-#endif
+
+	#ifdef SC2API
+			Debug()->SendDebug();
+	#endif
+ 
 }
 
 void CCBot::setUnits()
@@ -126,6 +130,11 @@ const MapTools & CCBot::Map() const
     return m_map;
 }
 
+ThreatMap & CCBot::ThreatMap() 
+{
+	return m_threatMap;
+}
+
 const StrategyManager & CCBot::Strategy() const
 {
     return m_strategy;
@@ -139,6 +148,64 @@ const BaseLocationManager & CCBot::Bases() const
 const UnitInfoManager & CCBot::UnitInfo() const
 {
     return m_unitInfo;
+}
+
+int CCBot::GetReservedEnergy()
+{
+	return reservedEnergy;
+}
+
+void CCBot::increaseReservedEnergy()
+{
+	reservedEnergy += 50;
+}
+
+void CCBot::decreaseReservedEnergy()
+{
+	reservedEnergy -= 50;
+	if (reservedEnergy < 0) {
+		reservedEnergy = 0;
+	}
+}
+
+int CCBot::GetThreatLevel()
+{
+	return threatLevel;
+}
+
+bool CCBot::getDefendMainRamp()
+{
+	return defendMainRamp;
+}
+
+void CCBot::setThreatTolerance(int tolerance)
+{
+	threatTolerance = tolerance;
+}
+
+int CCBot::getThreatTolerance()
+{
+	return threatTolerance;
+}
+
+bool CCBot::isExpandingProhibited()
+{
+	return expandingProhibited;
+}
+
+void CCBot::setThreatLevel(int to)
+{
+	threatLevel = to;
+}
+
+void CCBot::setDefendMainRamp(bool value)
+{
+	defendMainRamp = value;
+}
+
+bool CCBot::isUnderAttack()
+{
+	return underAttack;
 }
 
 int CCBot::GetCurrentFrame() const

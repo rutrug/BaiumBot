@@ -137,6 +137,8 @@ void BaseLocationManager::onStart()
     // construct the sets of occupied base locations
     m_occupiedBaseLocations[Players::Self] = std::set<const BaseLocation *>();
     m_occupiedBaseLocations[Players::Enemy] = std::set<const BaseLocation *>();
+
+
 }
 
 void BaseLocationManager::onFrame()
@@ -247,31 +249,12 @@ void BaseLocationManager::onFrame()
             m_occupiedBaseLocations[Players::Enemy].insert(&baseLocation);
         }
     }
-
-    // draw the debug information for each base location
-
-	//custom, check for mineral changes?
-	/**
-	for (auto & baseLocation : m_baseLocationData) {
-		int counter = 0;
-
-		for (auto & mineral : baseLocation.getMinerals()) {
-
-			if (mineral.getUnitPtr()->ideal_harvesters <= 0) {
-				baseLocation.mineralDepleted(counter);
-				std::cout << "mineral depleted! \n";
-				break;
-			}
-			counter++;
-
-		}
-	}
-	*/
     
 }
 
 BaseLocation * BaseLocationManager::getBaseLocation(const CCPosition & pos) const
 {
+
     if (!m_bot.Map().isValidPosition(pos)) { return nullptr; }
 
 #ifdef SC2API
@@ -279,6 +262,30 @@ BaseLocation * BaseLocationManager::getBaseLocation(const CCPosition & pos) cons
 #else
     return m_tileBaseLocations[pos.x / 32][pos.y / 32];
 #endif
+}
+
+const BaseLocation * BaseLocationManager::getNaturalExpansion(int player) const
+{
+	const BaseLocation * homeBase = getPlayerStartingBaseLocation(player);
+	
+	if (!homeBase)
+	{
+		return nullptr;
+	}
+	const BaseLocation * naturalBase = nullptr;
+	int minDistance = std::numeric_limits<int>::max();
+
+	for (const auto & base : getBaseLocations())
+	{
+		int dist = homeBase->getGroundDistance(base->getCenterOfBase());
+
+		if (base->getBaseID() != homeBase->getBaseID() && minDistance > dist && base->getCenterOfBase().x != 0)
+		{
+			minDistance = dist;
+			naturalBase = base;
+		}
+	}
+	return naturalBase;
 }
 
 void BaseLocationManager::drawBaseLocations()
@@ -304,6 +311,7 @@ const std::vector<const BaseLocation *> & BaseLocationManager::getBaseLocations(
 {
     return m_baseLocationPtrs;
 }
+
 
 const std::vector<const BaseLocation *> & BaseLocationManager::getStartingBaseLocations() const
 {
@@ -332,7 +340,7 @@ CCTilePosition BaseLocationManager::getNextExpansion(int player) const
 	
     for (auto & base : getBaseLocations())
     {
-        // skip mineral only and starting locations (TODO: fix this)
+        // skip mineral only and starting locations 
 		if (base->isMineralOnly() || base->isStartLocation() || base->isOccupiedByPlayer(Players::Self) || base->isOccupiedByPlayer(Players::Enemy))
         {
             continue;
@@ -342,8 +350,7 @@ CCTilePosition BaseLocationManager::getNextExpansion(int player) const
         auto tile = base->getDepotPosition();
         
 
-        bool buildingInTheWay = false; // TODO: check if there are any units on the tile
-
+        bool buildingInTheWay = false; 
 
         if (buildingInTheWay)
         {
@@ -367,4 +374,60 @@ CCTilePosition BaseLocationManager::getNextExpansion(int player) const
     }
 
     return closestBase ? closestBase->getDepotPosition() : CCTilePosition(0, 0);
+}
+
+CCTilePosition BaseLocationManager::getSkippedExpansion(int player) const
+{
+	const BaseLocation * homeBase = getPlayerStartingBaseLocation(player);
+	const BaseLocation * closestBase = nullptr;
+	const BaseLocation * secondClosest = nullptr;
+
+	int minDistance = std::numeric_limits<int>::max();
+	int secondMinDistance = std::numeric_limits<int>::max();
+
+	CCPosition homeTile = homeBase->getPosition();
+
+	for (auto & base : getBaseLocations())
+	{
+		// skip mineral only and starting locations 
+		if (base->isMineralOnly() || base->isStartLocation() || base->isOccupiedByPlayer(Players::Self) || base->isOccupiedByPlayer(Players::Enemy))
+		{
+			continue;
+		}
+
+		// get the tile position of the base
+		auto tile = base->getDepotPosition();
+
+
+		bool buildingInTheWay = false; 
+
+
+		if (buildingInTheWay)
+		{
+			continue;
+		}
+
+		// the base's distance from our main nexus
+		int distanceFromHome = homeBase->getGroundDistance(tile);
+
+		// if it is not connected, continue
+		if (distanceFromHome < 0)
+		{
+			continue;
+		}
+		
+
+		if (!closestBase || distanceFromHome < minDistance)
+		{
+
+			closestBase = base;
+			minDistance = distanceFromHome;
+		}
+		else if (!secondClosest || minDistance < secondMinDistance < distanceFromHome) {
+			secondClosest = base;
+			secondMinDistance = distanceFromHome;
+		}
+	}
+
+	return secondClosest ? secondClosest->getDepotPosition() : CCTilePosition(0, 0);
 }

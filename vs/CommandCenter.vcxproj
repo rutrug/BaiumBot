@@ -48,6 +48,7 @@
     <ClCompile Include="..\src\SquadOrder.cpp" />
     <ClCompile Include="..\src\StrategyManager.cpp" />
     <ClCompile Include="..\src\TechTree.cpp" />
+    <ClCompile Include="..\src\ThreatMap.cpp" />
     <ClCompile Include="..\src\Unit.cpp" />
     <ClCompile Include="..\src\UnitData.cpp" />
     <ClCompile Include="..\src\UnitInfoManager.cpp" />
@@ -55,6 +56,7 @@
     <ClCompile Include="..\src\Util.cpp" />
     <ClCompile Include="..\src\WorkerData.cpp" />
     <ClCompile Include="..\src\WorkerManager.cpp" />
+    <ClCompile Include="Drawing.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\BaseLocationManager.h" />
@@ -85,6 +87,7 @@
     <ClInclude Include="..\src\SquadOrder.h" />
     <ClInclude Include="..\src\StrategyManager.h" />
     <ClInclude Include="..\src\TechTree.h" />
+    <ClInclude Include="..\src\ThreatMap.h" />
     <ClInclude Include="..\src\Timer.hpp" />
     <ClInclude Include="..\src\Unit.h" />
     <ClInclude Include="..\src\UnitData.h" />
@@ -94,6 +97,7 @@
     <ClInclude Include="..\src\WorkerData.h" />
     <ClInclude Include="..\src\WorkerManager.h" />
     <ClInclude Include="..\src\BaseLocation.h" />
+    <ClInclude Include="Drawing.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGUID>{D4AC5062-8BEA-46D8-9231-57241C214F1C}</ProjectGUID>

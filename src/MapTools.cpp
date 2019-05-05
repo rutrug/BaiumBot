@@ -21,6 +21,16 @@ typedef std::vector<std::vector<float>>  vvf;
     #define HALF_TILE 0
 #endif
 
+bool MapTools::isValid(int x, int y) const
+{
+	return x >= 0 && y >= 0 && x < m_width && y < m_height;
+}
+
+bool MapTools::isValid(const sc2::Point2D & pos) const
+{
+	return isValid(static_cast<int>(pos.x), static_cast<int>(pos.y));
+}
+
 // constructor for MapTools
 MapTools::MapTools(CCBot & bot)
     : m_bot     (bot)
@@ -28,6 +38,7 @@ MapTools::MapTools(CCBot & bot)
     , m_height  (0)
     , m_maxZ    (0.0f)
     , m_frame   (0)
+	//, overseerMap()
 {
 
 }
@@ -42,8 +53,19 @@ void MapTools::onStart()
     m_height = BWAPI::Broodwar->mapHeight();
 #endif
 
+	//std::cout << " initializing overseer " << std::endl; //ADD THIS LINE (OVERSEER)
+	//overseerMap.setBot(&m_bot); //ADD THIS LINE (OVERSEER)
+	
+	//overseerMap.initialize(); //ADD THIS LINE (OVERSEER)
+	//std::cout << "Number of tiles on map: " << overseerMap.size() << std::endl; //ADD THIS LINE (OVERSEER)
+	//std::cout << "Number of regions: " << overseerMap.getRegions().size() << std::endl; //ADD THIS LINE (OVERSEER)
+
+
+
+
     m_walkable       = vvb(m_width, std::vector<bool>(m_height, true));
     m_buildable      = vvb(m_width, std::vector<bool>(m_height, false));
+	m_ramp			 = vvb(m_width, std::vector<bool>(m_height, false));
     m_depotBuildable = vvb(m_width, std::vector<bool>(m_height, false));
     m_lastSeen       = vvi(m_width, std::vector<int>(m_height, 0));
     m_sectorNumber   = vvi(m_width, std::vector<int>(m_height, 0));
@@ -57,7 +79,9 @@ void MapTools::onStart()
             m_buildable[x][y]       = canBuild(x, y);
             m_depotBuildable[x][y]  = canBuild(x, y);
             m_walkable[x][y]        = m_buildable[x][y] || canWalk(x, y);
-            m_terrainHeight[x][y]   = terrainHeight(CCPosition((CCPositionType)x, (CCPositionType)y));
+            m_terrainHeight[x][y]   = m_bot.Observation()->TerrainHeight(sc2::Point2D(x + 0.5f, y + 0.5f));
+
+			m_ramp[x][y] = m_walkable[x][y] || !m_buildable[x][y];
         }
     }
 
@@ -215,11 +239,13 @@ void MapTools::computeConnectivity()
 
 bool MapTools::isExplored(const CCTilePosition & pos) const
 {
+	
     return isExplored(pos.x, pos.y);
 }
 
 bool MapTools::isExplored(const CCPosition & pos) const
 {
+	
     return isExplored(Util::GetTilePosition(pos));
 }
 
@@ -266,6 +292,21 @@ bool MapTools::isPowered(int tileX, int tileY) const
 float MapTools::terrainHeight(float x, float y) const
 {
     return m_terrainHeight[(int)x][(int)y];
+}
+
+float MapTools::terrainHeight(sc2::Point2D pos) const
+{
+	return m_terrainHeight[static_cast<int>(pos.x)][static_cast<int>(pos.y)];
+}
+
+const float MapTools::getHeight(const sc2::Point2D pos) const
+{
+	return m_bot.Observation()->TerrainHeight(pos);
+}
+
+const float MapTools::getHeight(const float x, const float y) const
+{
+	return m_bot.Observation()->TerrainHeight(sc2::Point2D(x, y));
 }
 
 //int MapTools::getGroundDistance(const CCPosition & src, const CCPosition & dest) const
@@ -380,7 +421,8 @@ void MapTools::drawBox(const CCPosition & tl, const CCPosition & br, const CCCol
 void MapTools::drawCircle(const CCPosition & pos, CCPositionType radius, const CCColor & color) const
 {
 #ifdef SC2API
-    m_bot.Debug()->DebugSphereOut(sc2::Point3D(pos.x, pos.y, m_maxZ), radius, color);
+
+    m_bot.Debug()->DebugSphereOut(sc2::Point3D(pos.x, pos.y, m_bot.Map().getHeight(pos.x, pos.y)), radius, color);
 #else
     BWAPI::Broodwar->drawCircleMap(pos, radius, color);
 #endif
@@ -389,7 +431,7 @@ void MapTools::drawCircle(const CCPosition & pos, CCPositionType radius, const C
 void MapTools::drawCircle(CCPositionType x, CCPositionType y, CCPositionType radius, const CCColor & color) const
 {
 #ifdef SC2API
-    m_bot.Debug()->DebugSphereOut(sc2::Point3D(x, y, m_maxZ), radius, color);
+    m_bot.Debug()->DebugSphereOut(sc2::Point3D(x, y, m_bot.Map().getHeight(x, y)), radius, color);
 #else
     BWAPI::Broodwar->drawCircleMap(BWAPI::Position(x, y), radius, color);
 #endif
@@ -399,7 +441,7 @@ void MapTools::drawCircle(CCPositionType x, CCPositionType y, CCPositionType rad
 void MapTools::drawText(const CCPosition & pos, const std::string & str, const CCColor & color) const
 {
 #ifdef SC2API
-    m_bot.Debug()->DebugTextOut(str, sc2::Point3D(pos.x, pos.y, m_maxZ), color);
+    m_bot.Debug()->DebugTextOut(str, sc2::Point3D(pos.x + 0.2f, pos.y + 0.5f, getHeight(sc2::Point2D(pos.x,pos.y)) + 0.2f), color);
 #else
     BWAPI::Broodwar->drawTextMap(pos, str.c_str());
 #endif
@@ -489,6 +531,444 @@ bool MapTools::isDepotBuildableTile(int tileX, int tileY) const
     return m_depotBuildable[tileX][tileY];
 }
 
+sc2::Point2D MapTools::getWallPositionBunker() const
+{
+	//std::cout << "getting ramp point of natural expansion \n";
+	sc2::Point2D rampPoint = getRampPoint(m_bot.Bases().getNaturalExpansion(Players::Self));
+	//std::cout << "i have ramp point of natural expansion \n";
+
+	if (rampPoint == sc2::Point2D{ 0.0f, 0.0f })
+	{
+		return rampPoint;
+	}
+	int rampType = 0;
+	if (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ 0, 1 }))  // North
+	{
+		rampType += 10;
+	}
+	if (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ 1, 0 }))  // East
+	{
+		rampType += 1;
+	}
+	sc2::Point2D bunkerPosition = sc2::Point2D{ 0.0f, 0.0f };
+	switch (rampType)
+	{
+	case(0):  // SW
+	{
+		while (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ 1.0f, -1.0f }))
+		{
+			rampPoint += sc2::Point2D{ 1.0f, -1.0f };
+		}
+		int rampLength = 1;
+		while (!m_bot.Observation()->IsPlacable(rampPoint - static_cast<float>(rampLength)*sc2::Point2D{ 1.0f, -1.0f }))
+		{
+			++rampLength;
+		}
+		if (rampLength == 6)
+		{
+			bunkerPosition = rampPoint + sc2::Point2D(-1.0f, 4.0f);
+		}
+		break;
+	}
+	case(1):  // SE
+	{
+		while (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ 1.0f, 1.0f }))
+		{
+			rampPoint += sc2::Point2D{ 1.0f, 1.0f };
+		}
+		int rampLength = 1;
+		while (!m_bot.Observation()->IsPlacable(rampPoint - static_cast<float>(rampLength)*sc2::Point2D{ 1.0f, 1.0f }))
+		{
+			++rampLength;
+		}
+		if (rampLength == 4)
+		{
+			bunkerPosition = rampPoint + sc2::Point2D(-4.0f, 1.0f);
+		}
+		else if (rampLength == 6)
+		{
+			bunkerPosition = rampPoint + sc2::Point2D(-4.0f, -1.0f);
+		}
+		break;
+	}
+	case(10):  // NW
+	{
+		while (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ -1.0f, -1.0f }))
+		{
+			rampPoint += sc2::Point2D{ -1.0f, -1.0f };
+		}
+		int rampLength = 1;
+		while (!m_bot.Observation()->IsPlacable(rampPoint - static_cast<float>(rampLength)*sc2::Point2D{ -1.0f, -1.0f }))
+		{
+			++rampLength;
+		}
+		if (rampLength == 4)
+		{
+			bunkerPosition = rampPoint + sc2::Point2D(4.0f, -1.0f);
+		}
+		else if (rampLength == 6)
+		{
+			bunkerPosition = rampPoint + sc2::Point2D(4.0f, 1.0f);
+		}
+		break;
+	}
+	case(11):  // NE
+	{
+		while (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ -1.0f, 1.0f }))
+		{
+			rampPoint += sc2::Point2D{ -1.0f, 1.0f };
+		}
+		int rampLength = 1;
+		while (!m_bot.Observation()->IsPlacable(rampPoint - static_cast<float>(rampLength)*sc2::Point2D{ -1.0f, 1.0f }))
+		{
+			++rampLength;
+		}
+		if (rampLength == 6)
+		{
+			bunkerPosition = rampPoint + sc2::Point2D(1.0f, -4.0f);
+		}
+		break;
+	}
+	}
+	std::cout << "Calculated bunker position: x: " << bunkerPosition.x << " y: " << bunkerPosition.y << "\n";
+	return bunkerPosition;
+	
+}
+
+sc2::Point2D MapTools::getWallPositionDepot() const
+{
+	sc2::Point2D firstWall = getWallPositionDepot(m_bot.Bases().getPlayerStartingBaseLocation(Players::Self));
+
+	if (firstWall == sc2::Point2D{ 0.0f, 0.0f } )
+	{
+		return sc2::Point2D{ 0.0f, 0.0f };
+		//return getWallPositionDepot(m_bot.Bases().getNaturalExpansion(Players::Self));
+
+	}
+	return firstWall;
+}
+
+sc2::Point2D MapTools::getWallPositionDepot(const BaseLocation * base) const
+{
+
+	sc2::Point2D rampPoint = getRampPoint(base);
+	if (rampPoint == sc2::Point2D{ 0.0f, 0.0f })
+	{
+		return rampPoint;
+	}
+	int rampType = 0;
+	if (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ 0, 1 }))  // North
+	{
+		rampType += 10;
+	}
+	if (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ 1, 0 }))  // East
+	{
+		rampType += 1;
+	}
+	std::vector<sc2::Point2D> positions;
+	switch (rampType)
+	{
+	case(0):  // SW
+	{
+		while (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ 1.0f, -1.0f }))
+		{
+			rampPoint += sc2::Point2D{ 1.0f, -1.0f };
+		}
+		int rampLength = 1;
+		while (!m_bot.Observation()->IsPlacable(rampPoint - static_cast<float>(rampLength)*sc2::Point2D{ 1.0f, -1.0f }))
+		{
+			++rampLength;
+		}
+		if (rampLength == 2)
+		{
+			positions = { rampPoint + sc2::Point2D(0.5f, 1.5f), rampPoint + sc2::Point2D(1.5f, -0.5f), rampPoint + sc2::Point2D(-1.5f, 2.5f) };
+		}
+		else if (rampLength == 6)
+		{
+			positions = { rampPoint + sc2::Point2D(0.5f, 1.5f), rampPoint + sc2::Point2D(1.5f, -0.5f), rampPoint + sc2::Point2D(-3.5f, 5.5f), rampPoint + sc2::Point2D(-5.5f, 6.5f) };
+		}
+		break;
+	}
+	case(1):  // SE
+	{
+		while (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ 1.0f, 1.0f }))
+		{
+			rampPoint += sc2::Point2D{ 1.0f, 1.0f };
+		}
+		int rampLength = 1;
+		while (!m_bot.Observation()->IsPlacable(rampPoint - static_cast<float>(rampLength)*sc2::Point2D{ 1.0f, 1.0f }))
+		{
+			++rampLength;
+		}
+		if (rampLength == 2)
+		{
+			positions = { rampPoint + sc2::Point2D(0.5f, 1.5f), rampPoint + sc2::Point2D(-1.5f, 0.5f), rampPoint + sc2::Point2D(-2.5f, -1.5f) };
+		}
+		else if (rampLength == 4)
+		{
+			positions = { rampPoint + sc2::Point2D(0.5f, 1.5f), rampPoint + sc2::Point2D(-1.5f, 0.5f), rampPoint + sc2::Point2D(-3.5f, -1.5f), rampPoint + sc2::Point2D(-4.5f, -3.5f) };
+		}
+		else if (rampLength == 6)
+		{
+			positions = { rampPoint + sc2::Point2D(0.5f, 1.5f), rampPoint + sc2::Point2D(-1.5f, 0.5f), rampPoint + sc2::Point2D(-5.5f, -3.5f), rampPoint + sc2::Point2D(-6.5f, -5.5f) };
+		}
+		break;
+	}
+	case(10):  // NW
+	{
+		while (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ -1.0f, -1.0f }))
+		{
+			rampPoint += sc2::Point2D{ -1.0f, -1.0f };
+		}
+		int rampLength = 1;
+		while (!m_bot.Observation()->IsPlacable(rampPoint - static_cast<float>(rampLength)*sc2::Point2D{ -1.0f, -1.0f }))
+		{
+			++rampLength;
+		}
+		if (rampLength == 2)
+		{
+			positions = { rampPoint + sc2::Point2D(-0.5f, -1.5f), rampPoint + sc2::Point2D(1.5f, -0.5f), rampPoint + sc2::Point2D(2.5f, 1.5f) };
+		}
+		else if (rampLength == 4)
+		{
+			positions = { rampPoint + sc2::Point2D(-0.5f, -1.5f), rampPoint + sc2::Point2D(1.5f, -0.5f), rampPoint + sc2::Point2D(3.5f, 1.5f), rampPoint + sc2::Point2D(4.5f, 3.5f) };
+		}
+		else if (rampLength == 6)
+		{
+			positions = { rampPoint + sc2::Point2D(-0.5f, -1.5f), rampPoint + sc2::Point2D(1.5f, -0.5f), rampPoint + sc2::Point2D(5.5f, 3.5f), rampPoint + sc2::Point2D(6.5f, 5.5f) };
+		}
+		break;
+	}
+	case(11):  // NE
+	{
+		while (!m_bot.Observation()->IsPlacable(rampPoint + sc2::Point2D{ -1.0f, 1.0f }))
+		{
+			rampPoint += sc2::Point2D{ -1.0f, 1.0f };
+		}
+		int rampLength = 1;
+		while (!m_bot.Observation()->IsPlacable(rampPoint - static_cast<float>(rampLength)*sc2::Point2D{ -1.0f, 1.0f }))
+		{
+			++rampLength;
+		}
+		if (rampLength == 2)
+		{
+			positions = { rampPoint + sc2::Point2D(-0.5f, -1.5f), rampPoint + sc2::Point2D(-1.5f, 0.5f), rampPoint + sc2::Point2D(1.5f, -2.5f) };
+		}
+		if (rampLength == 6)
+		{
+			positions = { rampPoint + sc2::Point2D(-0.5f, -1.5f), rampPoint + sc2::Point2D(-1.5f, 0.5f), rampPoint + sc2::Point2D(3.5f, -5.5f), rampPoint + sc2::Point2D(5.5f, -6.5f) };
+		}
+		break;
+	}
+	}
+	const sc2::ABILITY_ID depotID = sc2::ABILITY_ID::BUILD_SUPPLYDEPOT;
+	std::vector<sc2::QueryInterface::PlacementQuery> placementBatched;
+	for (const auto & pos : positions)
+	{
+		placementBatched.push_back({ depotID, pos });
+	}
+	std::vector<bool> result = m_bot.Query()->Placement(placementBatched);
+	for (int i = 0; i < result.size(); ++i)
+	{
+		if (result[i])
+		{
+			return positions[i];
+		}
+	}
+	return sc2::Point2D{ 0.0f, 0.0f };
+}
+
+
+
+sc2::Point2D MapTools::getBunkerPosition() const
+{
+	const sc2::Point2D startPoint(m_bot.Bases().getPlayerStartingBaseLocation(Players::Self)->getCenterOfBase());
+	const float startHeight = m_bot.Observation()->TerrainHeight(startPoint);
+	sc2::Point2D currentPos = startPoint;
+	const sc2::Point2D enemyPoint = m_bot.Observation()->GetGameInfo().enemy_start_locations.front();
+	BaseLocation * const enemyBaseLocation = m_bot.Bases().getBaseLocation(enemyPoint);
+	const float stepSize = 1.0;
+	const sc2::Point2D xMove(stepSize, 0.0f);
+	const sc2::Point2D yMove(0.0f, stepSize);
+	int currentWalkingDistance = enemyBaseLocation->getGroundDistance(startPoint);
+	bool foundNewPos = true;
+	while (foundNewPos)
+	{
+		foundNewPos = false;
+		for (float i = -1.0f; i <= 1.0f; ++i)
+		{
+			for (float j = -1.0f; j <= 1.0f; ++j)
+			{
+				if (i != 0.0f || j != 0.0f)
+				{
+					const sc2::Point2D newPos = currentPos + i * xMove + j * yMove;
+					const int dist = enemyBaseLocation->getGroundDistance(newPos);
+					if (m_bot.Observation()->TerrainHeight(newPos) == startHeight && dist > 0 && currentWalkingDistance > dist)
+					{
+						currentWalkingDistance = dist;
+						currentPos = newPos;
+						foundNewPos = true;
+						break;
+					}
+				}
+			}
+			if (foundNewPos)
+			{
+				break;
+			}
+		}
+	}
+
+	const sc2::Point2D startPointToMain(currentPos);
+	sc2::Point2D currentPosToMain = startPointToMain;
+
+	const BaseLocation * myBaseLocation = m_bot.Bases().getPlayerStartingBaseLocation(Players::Self);
+	currentWalkingDistance = myBaseLocation->getGroundDistance(startPointToMain);
+	int maxNumberOfSteps = 500;
+	int numberOfSteps = 0;
+
+	int optWalkingDistanceFromBaseToBunker = 1;
+	int walkingDistanceFromBaseToBunker = this->getGroundDistance(CCPosition(currentPos.x, currentPos.y), CCPosition(currentPosToMain.x, currentPosToMain.y));
+	foundNewPos = true;
+
+	while (numberOfSteps < maxNumberOfSteps && foundNewPos)
+	{
+		foundNewPos = false;
+		for (float i = -1.0f; i <= 1.0f; ++i)
+		{
+			for (float j = -1.0f; j <= 1.0f; ++j)
+			{
+				if (i != 0.0f || j != 0.0f)
+				{
+					const sc2::Point2D newPos = currentPosToMain + i * xMove + j * yMove;
+					const int dist = myBaseLocation->getGroundDistance(newPos);
+					if (m_bot.Observation()->TerrainHeight(newPos) == startHeight && dist > 0 && currentWalkingDistance > dist && optWalkingDistanceFromBaseToBunker >= walkingDistanceFromBaseToBunker)
+					{
+						currentWalkingDistance = dist;
+						currentPosToMain = newPos;
+						walkingDistanceFromBaseToBunker = this->getGroundDistance(CCPosition(currentPos.x, currentPos.y), CCPosition(currentPosToMain.x, currentPosToMain.y));
+						foundNewPos = true;
+						numberOfSteps++;
+						break;
+					}
+				}
+			}
+			if (foundNewPos)
+			{
+				break;
+			}
+		}
+	}
+	return currentPosToMain;
+}
+
+sc2::Point2D MapTools::getNaturalBunkerPosition() const
+{
+	int maxNumberOfSteps = 200;
+	int numberOfSteps = 0;
+	int maxWalkingDistanceFromBaseToBunker = 8;
+	
+	
+	const sc2::Point2D startPoint(m_bot.Bases().getNaturalExpansion(Players::Self)->getCenterOfBase());
+
+	int walkingDistanceFromBaseToBunker = 0;
+
+	const float startHeight = m_bot.Observation()->TerrainHeight(startPoint);
+	sc2::Point2D currentPos = startPoint;
+
+	const sc2::Point2D enemyPoint = m_bot.Observation()->GetGameInfo().enemy_start_locations.front();
+	BaseLocation * const enemyBaseLocation = m_bot.Bases().getBaseLocation(enemyPoint);
+	const float stepSize = 2.0;
+
+	const sc2::Point2D xMove(stepSize, 0.0f);
+	const sc2::Point2D yMove(0.0f, stepSize);
+	int currentWalkingDistance = enemyBaseLocation->getGroundDistance(startPoint);
+
+	bool foundNewPos = true;
+
+	while (numberOfSteps < maxNumberOfSteps && foundNewPos)
+	{
+		foundNewPos = false;
+		for (float i = -1.0f; i <= 1.0f; ++i)
+		{
+			for (float j = -1.0f; j <= 1.0f; ++j)
+			{
+				if (i != 0.0f || j != 0.0f)
+				{
+					
+					const sc2::Point2D newPos = currentPos + i * xMove + j * yMove;
+					const int dist = enemyBaseLocation->getGroundDistance(newPos);
+					if (m_bot.Observation()->TerrainHeight(newPos) == startHeight && dist > 0 && currentWalkingDistance > dist && walkingDistanceFromBaseToBunker < maxWalkingDistanceFromBaseToBunker)
+					{
+						currentWalkingDistance = dist;
+						walkingDistanceFromBaseToBunker = this->getGroundDistance(CCPosition(startPoint.x, startPoint.y), CCPosition(currentPos.x, currentPos.y));
+						currentPos = newPos;
+						foundNewPos = true;
+						numberOfSteps++;
+						break;
+					}
+				}
+			}
+			if (foundNewPos)
+			{
+				break;
+			}
+		}
+	}
+	maxNumberOfSteps = 200;
+
+	const sc2::Point2D startPointToMainRamp(startPoint);
+	sc2::Point2D currentPosToRamp = startPointToMainRamp;
+
+	const BaseLocation * myBaseLocation = m_bot.Bases().getPlayerStartingBaseLocation(Players::Self);
+	currentWalkingDistance = myBaseLocation->getGroundDistance(startPointToMainRamp);
+	numberOfSteps = 0;
+
+	const float startHeightNatural = m_bot.Observation()->TerrainHeight(startPointToMainRamp);
+
+	foundNewPos = true;
+	while (numberOfSteps < maxNumberOfSteps && foundNewPos)
+	{
+		foundNewPos = false;
+		for (float i = -1.0f; i <= 1.0f; ++i)
+		{
+			for (float j = -1.0f; j <= 1.0f; ++j)
+			{
+				if (i != 0.0f || j != 0.0f)
+				{
+					const sc2::Point2D newPos = currentPosToRamp + i * xMove + j * yMove;
+					const int dist = myBaseLocation->getGroundDistance(newPos);
+					if (m_bot.Observation()->TerrainHeight(newPos) == startHeightNatural && dist > 0 && currentWalkingDistance > dist && walkingDistanceFromBaseToBunker <= maxWalkingDistanceFromBaseToBunker)
+					{
+
+						currentWalkingDistance = dist;
+						currentPosToRamp = newPos;
+						foundNewPos = true;
+						walkingDistanceFromBaseToBunker = this->getGroundDistance(CCPosition(startPoint.x, startPoint.y), CCPosition(currentPosToRamp.x, currentPosToRamp.y));
+						numberOfSteps++;
+						break;
+					}
+				}
+			}
+			if (foundNewPos)
+			{
+				break;
+			}
+		}
+		
+	}
+
+
+	// i have currentPos for potentional bunker and currentRampPos as a pos going to players ramp 
+	float x = (currentPos.x + currentPos.x + currentPosToRamp.x) / 3;
+	float y = (currentPos.y  + currentPos.y + currentPosToRamp.y) / 3;
+
+	return sc2::Point2D (x,y);
+
+}
+
+
+
 bool MapTools::isWalkable(int tileX, int tileY) const
 {
     if (!isValidTile(tileX, tileY))
@@ -517,6 +997,84 @@ int MapTools::height() const
 const std::vector<CCTilePosition> & MapTools::getClosestTilesTo(const CCTilePosition & pos) const
 {
     return getDistanceMap(pos).getSortedTiles();
+}
+
+const std::vector<CCTilePosition>& MapTools::getClosestTilesTo(const sc2::Point2D & pos) const
+{
+
+	return getDistanceMap(pos).getSortedTiles();
+}
+
+const sc2::Point2D MapTools::getClosestWalkableTo(const sc2::Point2D & pos) const
+{
+	sc2::Point2D validPos = { std::max(0.0f, std::min(pos.x, static_cast<float>(m_width))), std::max(0.0f, std::min(pos.y, static_cast<float>(m_height))) };
+	for (const auto & closestToPos : getClosestTilesTo(validPos))
+	{
+		if (isWalkable(closestToPos))
+		{
+			
+			return sc2::Point2D(closestToPos.x, closestToPos.y);;
+		}
+	}
+	return sc2::Point2D(0, 0);
+}
+
+const sc2::Point2D MapTools::getClosestBorderPoint(sc2::Point2D pos, int margin) const
+{
+	const float x_min = static_cast<float>(m_bot.Observation()->GetGameInfo().playable_min.x + margin);
+	const float x_max = static_cast<float>(m_bot.Observation()->GetGameInfo().playable_max.x - margin);
+	const float y_min = static_cast<float>(m_bot.Observation()->GetGameInfo().playable_min.y + margin);
+	const float y_max = static_cast<float>(m_bot.Observation()->GetGameInfo().playable_max.y - margin);
+	if (pos.x - x_min < x_max - pos.x)
+	{
+		if (pos.y - y_min < y_max - pos.y)
+		{
+			if (pos.x - x_min < pos.y - y_min)
+			{
+				return sc2::Point2D(x_min, pos.y);
+			}
+			else
+			{
+				return sc2::Point2D(pos.x, y_min);
+			}
+		}
+		else
+		{
+			if (pos.x - x_min < y_max - pos.y)
+			{
+				return sc2::Point2D(x_min, pos.y);
+			}
+			else
+			{
+				return sc2::Point2D(pos.x, y_max);
+			}
+		}
+	}
+	else
+	{
+		if (pos.y - y_min < y_max - pos.y)
+		{
+			if (x_max - pos.x < pos.y - y_min)
+			{
+				return sc2::Point2D(x_max, pos.y);
+			}
+			else
+			{
+				return sc2::Point2D(pos.x, y_min);
+			}
+		}
+		else
+		{
+			if (x_max - pos.x < y_max - pos.y)
+			{
+				return sc2::Point2D(x_max, pos.y);
+			}
+			else
+			{
+				return sc2::Point2D(pos.x, y_max);
+			}
+		}
+	}
 }
 
 CCTilePosition MapTools::getLeastRecentlySeenTile() const
@@ -570,6 +1128,87 @@ bool MapTools::canWalk(int tileX, int tileY)
 #endif
 }
 
+sc2::Point2D MapTools::getRampPoint(const BaseLocation * base) const
+{
+	const sc2::Point2D startPoint = base->getCenterOfBase() + Util::normalizeVector(base->getCenterOfBase() - base->getCenterOfMinerals(), 5.0f);
+	const float startHeight = m_bot.Observation()->TerrainHeight(startPoint);
+
+	sc2::Point2D currentPos = sc2::Point2D(std::round(startPoint.x) + 0.5f, std::round(startPoint.y) + 0.5f);
+	const sc2::Point2D enemyPoint = m_bot.Observation()->GetGameInfo().enemy_start_locations.front();
+	BaseLocation * const enemyBaseLocation = m_bot.Bases().getBaseLocation(enemyPoint);
+
+	
+	const float stepSize = 1.0;
+	const sc2::Point2D xMove(stepSize, 0.0f);	
+	const sc2::Point2D yMove(0.0f, stepSize);
+	int currentWalkingDistance = enemyBaseLocation->getGroundDistance(startPoint);
+	bool foundNewPos = true;
+
+	while (foundNewPos)
+	{
+		foundNewPos = false;
+		for (float i = -1.0f; i <= 1.0f; ++i)
+		{
+			for (float j = -1.0f; j <= 1.0f; ++j)
+			{
+				if (i != 0.0f || j != 0.0f)
+				{
+					const sc2::Point2D newPos = currentPos + i * xMove + j * yMove;
+					const int dist = enemyBaseLocation->getGroundDistance(newPos);
+					if (m_bot.Observation()->TerrainHeight(newPos) == startHeight && dist > 0 && m_bot.Observation()->IsPathable(newPos) && (m_bot.Observation()->IsPlacable(currentPos) || m_bot.Observation()->IsPlacable(newPos)))
+					{
+						if ((m_bot.Observation()->IsPlacable(newPos + sc2::Point2D(0.0f, 1.0f)) || m_bot.Observation()->IsPlacable(newPos - sc2::Point2D(0.0f, 1.0f)))
+							&& (m_bot.Observation()->IsPlacable(newPos + sc2::Point2D(1.0f, 0.0f)) || m_bot.Observation()->IsPlacable(newPos - sc2::Point2D(1.0f, 0.0f))))
+						{
+							bool newPosBetter = false;
+							if (currentWalkingDistance > dist)  // easy
+							{
+								newPosBetter = true;
+							}
+							else if (currentWalkingDistance == dist && m_bot.Observation()->IsPlacable(currentPos))  // Now it gets complicated
+							{
+								if (!m_bot.Observation()->IsPlacable(newPos))
+								{
+									newPosBetter = true;
+								}
+								else
+								{
+									const std::vector<float> dists = m_bot.Query()->PathingDistance({ { sc2::NullTag, currentPos, enemyBaseLocation->getCenterOfMinerals() },{ sc2::NullTag, newPos, enemyBaseLocation->getCenterOfMinerals() } });
+									if (dists.front() > dists.back())
+									{
+										newPosBetter = true;
+									}
+								}
+							}
+							if (newPosBetter)
+							{
+								currentWalkingDistance = dist;
+								currentPos = newPos;
+								foundNewPos = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+			if (foundNewPos)
+			{
+				break;
+			}
+		}
+	}
+	if (Util::Dist(startPoint, currentPos) < 20.0f)
+	{
+		return currentPos;
+	}
+	else
+	{
+		return sc2::Point2D(0.0f, 0.0f);
+	}
+}
+
+
+
 bool MapTools::canBuild(int tileX, int tileY) 
 {
 #ifdef SC2API
@@ -617,6 +1256,7 @@ void MapTools::draw() const
     int sy = (int)(camera.y - 8);
     int ex = sx + 24;
     int ey = sy + 20;
+	
 
 #else
     BWAPI::TilePosition screen(BWAPI::Broodwar->getScreenPosition());

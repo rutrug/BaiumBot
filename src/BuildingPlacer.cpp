@@ -23,10 +23,17 @@ bool BuildingPlacer::isInResourceBox(int tileX, int tileY) const
 // makes final checks to see if a building can be built at a certain location
 bool BuildingPlacer::canBuildHere(int bx, int by, const Building & b) const
 {
-    if (isInResourceBox(bx, by))
+    if (isInResourceBox(bx, by) && b.type.getName() != "TERRAN_MISSILETURRET")
     {
         return false;
     }
+
+	//edit: check if threat map is a condition
+	if (m_bot.getThreatTolerance() > 0) {
+		if (!m_bot.ThreatMap().canBuildHereWithTolerance(bx, by, b.type.tileHeight(), b.type.tileWidth(), m_bot.getThreatTolerance())) {
+			return false;
+		}
+	}
 
     // check the reserve map
     for (int x = bx; x < bx + b.type.tileWidth(); x++)
@@ -64,21 +71,16 @@ bool BuildingPlacer::canBuildHereWithSpace(int bx, int by, const Building & b, i
     int width  = b.type.tileWidth();
     int height = b.type.tileHeight();
 
-    // TODO: make sure we leave space for add-ons. These types of units can have addons:
 
 	if (b.type.getName() == "Barracks") {
 		width += 2;
 	}
 	
-
-
     // define the rectangle of the building spot
     int startx = bx - buildDist;
     int starty = by - buildDist;
     int endx   = bx + width + buildDist;
-    int endy   = by + height + buildDist;
-
-    // TODO: recalculate start and end positions for addons
+    int endy   = by + height;
 
     // if this rectangle doesn't fit on the map we can't build here
     if (startx < 0 || starty < 0 || endx > m_bot.Map().width() || endx < bx + width || endy > m_bot.Map().height())
@@ -93,6 +95,11 @@ bool BuildingPlacer::canBuildHereWithSpace(int bx, int by, const Building & b, i
         {
             if (!b.type.isRefinery())
             {
+				if (b.type.getName() == "TERRAN_MISSILETURRET") {
+					if (!buildable(b, x, y)) {
+						return false;
+					}
+				}
                 if (!buildable(b, x, y) || m_reserveMap[x][y])
                 {
                     return false;
@@ -129,7 +136,7 @@ CCTilePosition BuildingPlacer::getBuildLocationNear(const Building & b, int buil
     }
 
     double ms = t.getElapsedTimeInMilliSec();
-    //printf("Building Placer Failure: %s - Took %lf ms\n", b.type.getName().c_str(), ms);
+    printf("Building Placer Failure: %s - Took %lf ms\n", b.type.getName().c_str(), ms);
 
     return CCTilePosition(0, 0);
 }
@@ -173,13 +180,10 @@ bool BuildingPlacer::tileOverlapsBaseLocation(int x, int y, UnitType type) const
 
 bool BuildingPlacer::buildable(const Building & b, int x, int y) const
 {
-    // TODO: does this take units on the map into account?
     if (!m_bot.Map().isValidTile(x, y) || !m_bot.Map().canBuildTypeAtPosition(x, y, b.type))
     {
         return false;
     }
-
-    // todo: check that it won't block an addon
 
     return true;
 }

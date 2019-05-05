@@ -44,6 +44,7 @@ public:
     bool DrawLastSeenTileInfo;
     bool DrawUnitTargetInfo;
     bool DrawSquadInfo;		
+	bool DrawThreatMap;
     
     CCColor ColorLineTarget;
     CCColor ColorLineMineral;
