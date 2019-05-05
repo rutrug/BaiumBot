@@ -1,17 +1,15 @@
 # BaiumBot: Terran macro extension based on CommandCenter bot
 ![Baium Screenshot](https://vignette.wikia.nocookie.net/starcraft/images/4/4c/ArcturusMengsk_SC2_Art2.jpg/revision/latest?cb=20110814133340)
 
-WIP!
-
-Goals for now:
+Notable features:
+* Is able to execute any strategy with reasonable precision (no proxy placement)
 * Prepull for building constructions
-* Production manager will be able to build add-ons, upgrades
+* Can build add-ons, upgrades
+* Is able to swap buildings
 * Automatic build-order planning system
-* Creating complete wallins
-* Effective and efficient building placement (relatively smart turret & bunker placements, efficient production placement,...)
-
-Used libraries:
-* Overseer library (https://gitlab.com/OverStarcraft/Overseer)
+* Creating main ramp wall-ins
+* Simple threat map implementation
+* Efficient building placement (relatively smart turret & bunker placements...)
 
 # CommandCenter: AI Bot for Broodwar and Starcraft II
 
